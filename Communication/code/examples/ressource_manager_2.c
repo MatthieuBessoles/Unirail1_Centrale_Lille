@@ -180,43 +180,56 @@ void * gestion_train(void *client_sock_ptr){
     		printf("%d\n",requete[i]);
     		}
     	//2.2 Récupération de la ressource et des services associés
-    	int id_service_demande = requete[2];
-    	printf("id_service_demande : %d\n",id_service_demande);
-    	int my_ressource = service_to_ressource(id_service_demande);
-    	printf("ma ressource est : %i\n",my_ressource);
-    	int *my_services = ressource_2_list_services(my_ressource);
-    	
-    	//printf("mes services sont : \n");
-	//2.1 Controle à effectuer
     	int message_type = requete[0];
-    	free(requete);
-    	if (message_type != 1){
-    		printf("Pas le bon type de message ! \n");
-    		// Demande non valide
-        	close(client_sock);
-        	return NULL;
-    		//exit(EXIT_FAILURE);
-    		}
-    	/*if (my_ressource != 1){
-    		printf("Pas le bon type de message ! \n");
-    		exit(EXIT_FAILURE);
-    		}*/
-    		//autres actions à mener
-    	//3. Traitement de la demande
-	//semaphore = &ressource_semaphores[my_ressource];
-    	//4. Tentative d'accès à la ressource
-    	printf("Tentative d'accès à la ressource %d\n",my_ressource);
-    	sem_wait(&ressource_semaphores[my_ressource-1]); //on attend que la ressource se libère
-    	printf("Allocation de la ressource  %d au train %d\n",my_ressource,2);
-        //5. La ressource est disponible, envoi des trames au train
-        unsigned char message_vers_train[50];
-        creation_message_vers_train(message_vers_train,2, 2, my_services,id_service_demande,1,client_sock);
-        printf("Message créé et envoyé !\n");
-   
-
-    	// Fermeture de la connexion avec le client
-    	close(client_sock);
+    	int train_demandeur_id = requete[1];
+    	int *my_services;
+    	int id_service_demande;
+    	printf("Le train %d envoie un message de type %d \n",train_demandeur_id,message_type);
+    	switch (message_type){
+    		case 1:
+    			id_service_demande = requete[2];
+    			printf("Il s'agit d'une demande d'accès au service %d jugé critique par le train %d\n",id_service_demande,train_demandeur_id);
+    			int my_ressource = service_to_ressource (id_service_demande);
+    			printf("ma ressource est : %i\n",my_ressource);
+    			my_services = ressource_2_list_services ( my_ressource);
     	
+    			//printf("mes services sont : \n");
+			//2.1 Controle à effectuer
+    	
+    			free(requete);
+    			/*if (my_ressource != 1){
+    				printf("Pas le bon type de message ! \n");
+    				exit(EXIT_FAILURE);
+    				}*/
+    			//autres actions à mener
+    			//3. Tentative d'accès à la ressource
+    			printf("Tentative d'accès à la ressource %d\n",my_ressource);
+    			sem_wait(&ressource_semaphores [my_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",my_ressource,2);
+        		//4. La ressource est disponible, envoi des trames au train
+        		unsigned char message_vers_train[50];
+        		creation_message_vers_train (message_vers_train,2,train_demandeur_id, my_services, id_service_demande,1, client_sock,my_ressource);
+        		printf("Message créé et envoyé !\n");
+        		break;
+   		case 3:
+   			//1. identification de la ressource liberee
+   			int id_ressource_liberee = requete[2];
+    			printf("Il s'agit d'une attestation de réalisation des services appartenant à la ressource %d par le train %d\n", id_ressource_liberee, train_demandeur_id);
+			//2. Libération de la ressource
+			sem_post(&ressource_semaphores [id_ressource_liberee -1]);
+			//3. Creation et envoi du message de confirmation de libération de la ressource au train
+			my_services[1] = 0;
+			id_service_demande = 0;
+			unsigned char rep_vers_train[2];//2 octets
+			creation_message_vers_train (rep_vers_train,4,train_demandeur_id, my_services, id_service_demande,1, client_sock,id_ressource_liberee);
+			break;
+		default:
+			printf("Pas le bon type de message ! \n");
+    			// Demande non valide
+        		close(client_sock);
+    			// Fermeture de la connexion avec le client
+    			break;
+    			}
 
     	return NULL;
 }

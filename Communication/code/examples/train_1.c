@@ -51,17 +51,29 @@ int main() {
 			if (is_ressource_fun(mon_service)){
 				//1. Création et envoi du message à envoyer au G2R
 				int accepte = 0;
-				unsigned char messagage_g2r_demande[50];
-				creation_message_vers_g2r(demande_g2r, TRAIN_ID, mon_service,sd_g2r);
+				creation_message_vers_g2r(demande_g2r, TRAIN_ID, mon_service,sd_g2r,0);
+				//attente passive tant que le g2r ne renvoie rien
 				//3. Réception de la trame du g2r
-				unsigned char g2r_reply =  recevoir_trame(sd_g2r);//Dans la trame de retour se trouvent l'ensemble des id des services à demande à l'API par le train
+				unsigned char* messagage_g2r_rep= malloc(15 * sizeof(unsigned char) * 2);
+				int m = read(sd_g2r, messagage_g2r_rep, sizeof(messagage_g2r_rep));
+    				if (m < 0) {
+        				perror("Erreur lors de la lecture de la demande du client");
+        				close(sd_g2r);
+        				return NULL;
+    				}
+    	
+    				 //l'ensemble des id des services à demande à l'API par le train
 				
 				//4. Lecture de cette réponse, il faut également récupérer l'ID de la ressource pour la restitution
-				int reception_taille = sizeof(g2r_reply)/sizeof (unsigned char);
-				int *list_param_received = lect_req_g2r(g2r_reply, reception_taille);
+				int reception_taille =strlen((char*)messagage_g2r_rep);
+				printf("Message reçu : ");
+    				afficher_trame ( messagage_g2r_rep , reception_taille);
+				//Dans la trame de retour se trouvent
+				int *list_param_received = lect_req_g2r(messagage_g2r_rep, reception_taille);
 				int message_type_received = list_param_received[0];
 				int id_train_received = list_param_received[1];
 				int number_services_received = list_param_received[2];
+				int ressource_utilise = list_param_received[3];
 				//4.1. On contrôle que c'est bien ce que l'on attendait de recevoir
 				//Je ne sais pas encore comment agir dans ce cas.
 				//4.2. On contrôle que c'est bien ce que l'on attendait de recevoir
@@ -74,8 +86,18 @@ int main() {
 				printf("je demande l'accession à l'API\n");
 				sleep(3);
 				//6. Restitution de la ressource
-				creation_message_vers_g2r(restitution_g2r, TRAIN_ID, mon_service,sd_g2r);
-				}
+				creation_message_vers_g2r(restitution_g2r, TRAIN_ID, mon_service,sd_g2r,ressource_utilise);
+				//7. Attente passive de la bonne restitution par le G2R et de la réception de la confirmation
+				unsigned char* confirmation_g2r_rep= malloc(2 * sizeof(unsigned char) * 2); //2 octets
+				int n = read(sd_g2r, confirmation_g2r_rep, sizeof(confirmation_g2r_rep));
+    				if (n < 0) {
+        				perror("Erreur lors de la lecture de la demande du client");
+        				close(sd_g2r);
+        				return NULL;
+    				}
+    				printf("Message reçu : ");
+    				afficher_trame(confirmation_g2r_rep, 2);
+			}
 				
 			else {
 				//1. Création et envoi de la trame XWAY à à l'API				

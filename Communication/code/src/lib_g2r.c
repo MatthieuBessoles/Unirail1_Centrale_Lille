@@ -200,7 +200,7 @@ void afficher_trame(unsigned char* trame,int taille) {
     	}
     	printf("\n");
 }
-int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd){
+int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd,int id_ressource){
 	printf("Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
 	int list_size = sizeof(list_services) / sizeof(int);
 	printf("il faut demander %i services \n",list_size);
@@ -221,8 +221,9 @@ int creation_message_vers_train(unsigned char * message,int message_type, int id
 			printf("message_0 = %hx\n",message[0]);
 			message[1] = int_to_hex(id_train);
 			message[2] = int_to_hex(list_size);
+			message[3] = int_to_hex(id_ressource);
 			for (int i = 1; i <list_size+1; i++) {
-				message[i+2] = int_to_hex(list_services[i]); 
+				message[i+3] = int_to_hex(list_services[i]); 
     }				
 			break;
 		case 4:	//acknowledge fin d'utilisation de la ressource	

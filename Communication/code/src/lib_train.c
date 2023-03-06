@@ -245,7 +245,7 @@ int requete_xway(int id_requete, int id_train, int id_trame, unsigned char XWAY_
 }
 
 
-int creation_message_vers_g2r(int message_type, int id_train, int id_service,int sock_fd){
+int creation_message_vers_g2r(int message_type, int id_train, int id_service,int sock_fd, int id_ressource){
 	printf("Création d'un message de type %d par le train d'id %d \n", message_type, id_train);
 	int NB_OCTETS = 3;
 	unsigned char message [NB_OCTETS]; // Allocate memory for the message
@@ -258,18 +258,18 @@ int creation_message_vers_g2r(int message_type, int id_train, int id_service,int
 			message[2] = int_to_hex(id_service);
 	
 			break;
-		case 4:		
+		case 3:		
 			message[0] = int_to_hex(message_type);
 			//printf("message_0 = %hx\n",message[0]);
 			message[1] = int_to_hex(id_train);
-			message[2] = int_to_hex(id_service);	
+			message[2] = int_to_hex(id_ressource); //le message dde confirmation contient l'ID de la ressource rendue	
 			break;
 		default:
 			
 			printf("Pas le bon type de message");
 			exit(EXIT_FAILURE);
 		}
-	printf("le message envoyé par le G2R vers le train est : ");
+	printf("le message envoyé par le train %d vers le G2R est : ",id_train);
 	afficher_trame(message,NB_OCTETS);
 	size_t message_size = strlen((char*)message);
         printf("message de taille %ld\n",message_size);
@@ -328,33 +328,8 @@ void close_socket(int sock) {
         exit(EXIT_FAILURE);
     }
 }
-/* ------------------------------------------------------------------------ */
-/*		            ENVOI DE MESSAGES					*/
-/* ------------------------------------------------------------------------ */
 
-void envoyer_trame(int socket_id, char *message) {
-    int longueur_message = strlen(message);
-    if (send(socket_id, message, longueur_message, 0) != longueur_message) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-    printf("Message envoyé: %s\n", message);
-    close(socket_id);
-}
 
-unsigned char recevoir_trame(int socket_id) {
-	unsigned char server_reply[2000];
-    	if (recv(socket_id, server_reply, 2000, 0) < 0) {
-        	perror("Erreur: réception de réponse a échoué");
-    }
-    	printf("Réponse reçue: %s\n", server_reply);
-    	return server_reply;
-}
-
-/* -----------------------------------------------------------------------
-/* ------------------------------------------------------------------------ */
-/*		            ENVOI DE MESSAGES					*/
-/* ------------------------------------------------------------------------ */
 
 int *lect_req_g2r(unsigned char* message_recu, int message_size){
 	//cette fonction lit la requête reçue et en extrait les informations utilisées: type de message (req ou ack), l'ensemble des id_service faisant partis de la ressource et id_train qui le demande. L'id sera ensuite utilisé dans la fonction service_to_ressource
