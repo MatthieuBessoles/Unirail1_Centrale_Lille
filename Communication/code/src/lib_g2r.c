@@ -9,7 +9,7 @@
 #include <semaphore.h>
 #include <pthread.h>
 //à changer avec le chemin de la librairie
-#include "/home/boyer/Bureau/reseaux/TP2/code/include/lib_g2r.h"
+#include "/home/boyer/Documents/GitHub/Unirail1_Centrale_Lille/Communication/code/include/lib_g2r.h"
 
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
@@ -227,7 +227,7 @@ int creation_message_vers_train(unsigned char * message,int message_type, int id
     }				
 			break;
 		case 4:	//acknowledge fin d'utilisation de la ressource	
-			
+			printf("message de type ackowledge\n");
 			message[0] = int_to_hex(message_type);
 			message[1] = int_to_hex(id_train);	
 			break;

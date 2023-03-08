@@ -6,7 +6,7 @@
 /* ------------------------------------------------------------------------ */
 /*			E N T Ê T E S    P E R S O N N E L L E S						*/
 /* ------------------------------------------------------------------------ */
-#include "/home/boyer/Bureau/reseaux/TP2/code/include/lib_train.h"
+#include "/home/boyer/Documents/GitHub/Unirail1_Centrale_Lille/Communication/code/include/lib_train.h"
 
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/

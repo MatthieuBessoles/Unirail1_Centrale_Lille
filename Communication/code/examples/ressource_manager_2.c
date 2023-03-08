@@ -25,7 +25,7 @@
 /* ------------------------------------------------------------------------ */
 /*			E N T Ê T E S    P E R S O N N E L L E S						*/
 /* ------------------------------------------------------------------------ */
-#include "/home/boyer/Bureau/reseaux/TP2/code/include/lib_g2r.h"
+#include "/home/boyer/Documents/GitHub/Unirail1_Centrale_Lille/Communication/code/include/lib_g2r.h"
 /* ------------------------------------------------------------------------ */
 		/* D É F I N I T I O N S  D E  T Y P E S */
 /* ------------------------------------------------------------------------ */
@@ -207,21 +207,27 @@ void * gestion_train(void *client_sock_ptr){
     			sem_wait(&ressource_semaphores [my_ressource-1]); //on attend que la ressource se libère
     			printf("Allocation de la ressource  %d au train %d\n",my_ressource,2);
         		//4. La ressource est disponible, envoi des trames au train
-        		unsigned char message_vers_train[50];
+        		unsigned char* message_vers_train= malloc(15 * sizeof(unsigned char) * 2);
+        		//unsigned char message_vers_train[50];
         		creation_message_vers_train (message_vers_train,2,train_demandeur_id, my_services, id_service_demande,1, client_sock,my_ressource);
         		printf("Message créé et envoyé !\n");
+        		free(message_vers_train);
         		break;
-   		case 3:
+   		case 3: 
+   			printf("Confirmation de la libération d'une ressource par le train %d\n",train_demandeur_id);
    			//1. identification de la ressource liberee
    			int id_ressource_liberee = requete[2];
     			printf("Il s'agit d'une attestation de réalisation des services appartenant à la ressource %d par le train %d\n", id_ressource_liberee, train_demandeur_id);
 			//2. Libération de la ressource
-			sem_post(&ressource_semaphores [id_ressource_liberee -1]);
+			sem_post(&ressource_semaphores[id_ressource_liberee -1]);
+			printf("libération de la ressource %d ok\n", id_ressource_liberee);
 			//3. Creation et envoi du message de confirmation de libération de la ressource au train
-			my_services[1] = 0;
+			int *my_service_fake[] = {0};
 			id_service_demande = 0;
-			unsigned char rep_vers_train[2];//2 octets
+			printf("passage des param ok \n");
+			unsigned char rep_vers_train[20];//2 octets
 			creation_message_vers_train (rep_vers_train,4,train_demandeur_id, my_services, id_service_demande,1, client_sock,id_ressource_liberee);
+			printf("Envoi de l'ackowledge par le G2R vers le train %d ok\n", train_demandeur_id);
 			break;
 		default:
 			printf("Pas le bon type de message ! \n");
