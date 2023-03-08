@@ -9,7 +9,7 @@
 #include <semaphore.h>
 #include <pthread.h>
 //à changer avec le chemin de la librairie
-#include "/home/boyer/Documents/GitHub/Unirail1_Centrale_Lille/Communication/code/include/lib_g2r.h"
+#include "../include/lib_g2r.h"
 
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
