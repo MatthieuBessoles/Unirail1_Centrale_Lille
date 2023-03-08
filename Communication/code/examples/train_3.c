@@ -30,7 +30,7 @@
 
 
 int main() {
-	int liste_parcourt[50] = {43,31,50,23,52,32,50,33,29,53,11,19};/*à remplir avec le parcourt */
+	int liste_parcourt[50] = {31,43,50,23,52,32,33,50};/*à remplir avec le parcourt */
 
 	//1. Connexion du train au G2R en TCP/IP
 	int length_parcourt = 12;
@@ -84,7 +84,7 @@ int main() {
 					requete_xway(list_param_received[i], TRAIN_ID, TRAME_ID, XWAY_HEXA_TRAIN, type, sd_api); //A VOIR TYPE (AIGUILLAGE OU TRONCON)
 				}*/
 				printf("je demande l'accession à l'API\n");
-				sleep(3);
+				sleep(2);
 				//6. Restitution de la ressource
 				creation_message_vers_g2r(restitution_g2r, TRAIN_ID, mon_service,sd_g2r,ressource_utilise);
 				//7. Attente passive de la bonne restitution par le G2R et de la réception de la confirmation
@@ -107,7 +107,7 @@ int main() {
 				}
 
     	} //fin du parcourt
-    sleep(5);
+    sleep(8);
     }
 
     close(sd_g2r);
