@@ -13,7 +13,7 @@
 /* ------------------------------------------------------------------------ */
 
 #define SERVER_IP "127.0.0.1" // Adresse IP du serveur G2R
-#define SERVER_PORT 8888 // Port du serveur G2R
+#define SERVER_PORT 8890 // Port du serveur G2R
 #define API_IP "10.31.125.14" // Adresse IP de l'API
 #define API_PORT 502 // Port du serveur G2R
 #define TRAIN_ID 1 // Numéro du train

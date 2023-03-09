@@ -13,11 +13,11 @@
 /* ------------------------------------------------------------------------ */
 
 #define SERVER_IP "127.0.0.1" // Adresse IP du serveur G2R
-#define SERVER_PORT 8888 // Port du serveur G2R
+#define SERVER_PORT 8890 // Port du serveur G2R
 #define API_IP "10.31.125.14" // Adresse IP de l'API
 #define API_PORT 502 // Port du serveur G2R
-#define TRAIN_ID 1 // Numéro du train
-#define TRAME_ID 1
+#define TRAIN_ID 3 // Numéro du train
+#define TRAME_ID 3
 #define XWAY_HEXA_TRAIN 0x01 //train 1
 #define demande_g2r 1 //premier message vers le G2R pour réservation de la ressource
 #define restitution_g2r 3 //fin d'utilisation de la ressource du train vers g2R 
@@ -30,7 +30,7 @@
 
 
 int main() {
-	int liste_parcourt[50] = {31,43,50,23,52,32,33,50};/*à remplir avec le parcourt */
+	int liste_parcourt[50] = {40,13,20,52,30,34,42,32,49,33,43,35,31,51,26};/*à remplir avec le parcourt */
 
 	//1. Connexion du train au G2R en TCP/IP
 	int length_parcourt = 12;

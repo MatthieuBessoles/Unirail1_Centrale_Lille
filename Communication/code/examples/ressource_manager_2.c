@@ -36,7 +36,8 @@ typedef void * (* pf_t)(void *) ;
 
 #define NUM_RESSOURCES 10
 #define LOCALIP "127.0.0.1" //IP du PC gestionnaire de ressources
-#define LOCALPORT 8888 //Port du processus gestionnaire de ressource
+#define LOCALPORT 8890 //Port du processus gestionnaire de ressource
+#define LOCALPORT_T3 8888 //Port du processus gestionnaire de ressource
 #define REMOTEPORT_T1_T3 3000 //T1/2 sont gérés sur le même PC
 #define REMOTEPORT_T2_T4 2000 //T3/4 sont gérés sur le même PC
 #define REMOTEIP_T1_T2 "127.0.0.1" //A MODIFIER
@@ -84,14 +85,10 @@ int main(int argc, char *argv[]) {
 		
     	//déclaration des sockets pour les 4 trains
     
-    	int sockfd, newsock_1, newsock_2, newsock_3,newsock_4;
+    	int server_fd, new_sockfd_1,new_sockfd_2,new_sockfd_3,new_sockfd_4;
     
     	socklen_t clilen;
     	struct sockaddr_in serv_addr;
-    	struct sockaddr_in cli_addr_T1;
-    	struct sockaddr_in cli_addr_T2;
-    	struct sockaddr_in cli_addr_T3;
-    	struct sockaddr_in cli_addr_T4;
     	int n;
 
     	// Initialisation des sémaphores pour chaque ressource
@@ -100,49 +97,95 @@ int main(int argc, char *argv[]) {
     	}	
 
     	// Création du socket
-    	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    	if (sockfd < 0) {
+    	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    	if (server_fd < 0) {
         	perror("Erreur lors de la création du socket");
         	exit(1);
     	}
+    	
 
     	// Initialisation des valeurs de la structure sockaddr_in
     	bzero((char *) &serv_addr, sizeof(serv_addr));
     	serv_addr.sin_family = AF_INET;
     	serv_addr.sin_addr.s_addr = INADDR_ANY;
     	serv_addr.sin_port = htons(LOCALPORT);
+    	
 
-    	// Binding
-    	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    	// Binding : attachement du socket au port
+    	if (bind(server_fd , (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         	perror("Erreur lors du binding");
         	exit(1);
     	}
+    	
 
-    	// Écoute
-    	listen(sockfd, NB_TRAINS+1);
-    	clilen = sizeof(cli_addr_T1); //même taille peut importe le train
-	newsock_2 = accept(sockfd, (struct sockaddr *)&cli_addr_T2, &clilen);
-	printf("jaccepte la connexion au train \n");
-    	if (newsock_2 < 0) {
+    	// Écoute pour les 4 trains
+    	listen(server_fd, 4);
+    	clilen = sizeof(serv_addr); //même taille peut importe le train
+    	
+    	new_sockfd_1 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train 1 \n");
+    	if (new_sockfd_1 < 0) {
         	perror("Erreur lors de l'acceptation de la connexion entrante");
     		}
     		
-    	int *client_fd_ptr = malloc(sizeof(int));
-        *client_fd_ptr = newsock_2;
+    	int *client_fd_ptr_1 = malloc(sizeof(int));
+        *client_fd_ptr_1 = new_sockfd_1;
+        
+        new_sockfd_2 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train \n");
+    	if (new_sockfd_2 < 0) {
+        	perror("Erreur lors de l'acceptation de la connexion entrante");
+    		}
+    		
+    	int *client_fd_ptr_2 = malloc(sizeof(int));
+        *client_fd_ptr_2 = new_sockfd_2;
+    	
+        
+        new_sockfd_3 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train \n");
+    	if (new_sockfd_3 < 0) {
+        	perror("Erreur lors de l'acceptation de la connexion entrante");
+    		}
+    		
+    	int *client_fd_ptr_3 = malloc(sizeof(int));
+        *client_fd_ptr_3 = new_sockfd_3;
+        
+     	new_sockfd_4 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train \n");
+    	if (new_sockfd_4 < 0) {
+        	perror("Erreur lors de l'acceptation de la connexion entrante");
+    		}
+    		
+    	int *client_fd_ptr_4 = malloc(sizeof(int));
+        *client_fd_ptr_4 = new_sockfd_4;
+        
+        
         printf("je rentre de le while \n");
     	while (1) {
-    		
     		/* Création des 4 threads pour les trains*/
-		CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr), " pthread_create ()"); //train 2
+		CHECK_T( pthread_create (&client_trains[0], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_1), " pthread_create ()"); //train 1
+  
+		CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_2), " pthread_create ()"); //train 2
+		/* Création des 4 threads pour les trains*/
+		CHECK_T( pthread_create (&client_trains[2], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_3), " pthread_create ()"); //train 3
+		CHECK_T( pthread_create (&client_trains[3], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_4), " pthread_create ()"); //train 4
+		
+		CHECK_T ( pthread_join (client_trains[0], (void **) &status )," pthread_join ()") ;
 		CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
+		CHECK_T ( pthread_join (client_trains[2], (void **) &status )," pthread_join ()") ;
+		CHECK_T ( pthread_join (client_trains[3], (void **) &status )," pthread_join ()") ;
 			
 		sleep(5);
         // Déverrouille la ressource en relâchant le sémaphore
         //sem_post(&resource_semaphores[resource_index]);
     }
 
-    	// Ferme la connexion
-    	close(newsock_2);
+    	// Ferme les connexions
+    	close(new_sockfd_1);
+    	close(new_sockfd_2);
+    	close(new_sockfd_3);
+    	close(new_sockfd_4);
+    	close(server_fd);
 
 
 	// Ferme les sémaphores

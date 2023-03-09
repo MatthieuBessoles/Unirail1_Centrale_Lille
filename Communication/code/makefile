@@ -1,7 +1,6 @@
 all: libs_g2r libs_train g2r train
 g2r: bin/ressource_manager_stat bin/ressource_manager_dyn
-train: bin/train_1_stat bin/train_1_dyn bin/train_3_tat bin/train_3_dyn
-#bin/train_2_tat bin/train_2_dyn bin/train_3_tat bin/train_3_dyn bin/train_4_tat bin/train_4_dyn
+train: bin/train_1_stat bin/train_1_dyn bin/train_3_stat bin/train_3_dyn bin/train_2_stat bin/train_2_dyn bin/train_4_stat bin/train_4_dyn
 libs_g2r :lib/lib_g2r.a lib/lib_g2r.so
 libs_train :lib/lib_train.a lib/lib_train.so
 
