@@ -37,7 +37,7 @@ int main() {
 	
 
 	int sd_g2r = connect_to_server(SERVER_IP,SERVER_PORT);
-	printf("Bien connecté au serveur g2r\n");
+	printf("[TRAIN 3]Bien connecté au serveur g2r\n");
 	//2. Connexion du train à l'API en XWAY
 	//int sd_api = connect_to_server(API_IP,API_PORT);
 	int type = 2;
@@ -46,7 +46,7 @@ int main() {
 		for(i = 0; i <length_parcourt; i++){
 			//1. On vérifie si le service demandé est une ressource critique
 			int mon_service = liste_parcourt[i];
-			printf("mon service demandé est : %d\n",mon_service);
+			printf("[TRAIN 3]mon service demandé est : %d\n",mon_service);
 			//2. Si oui : demande au G2R, sinon : demande directement à l'API
 			if (is_ressource_fun(mon_service)){
 				//1. Création et envoi du message à envoyer au G2R
@@ -83,7 +83,7 @@ int main() {
 					//5.1. Création et envoi de la trame XWAY vers l'API
 					requete_xway(list_param_received[i], TRAIN_ID, TRAME_ID, XWAY_HEXA_TRAIN, type, sd_api); //A VOIR TYPE (AIGUILLAGE OU TRONCON)
 				}*/
-				printf("je demande l'accession à l'API\n");
+				printf("Train 3 demande l'accession à l'API\n");
 				sleep(2);
 				//6. Restitution de la ressource
 				creation_message_vers_g2r(restitution_g2r, TRAIN_ID, mon_service,sd_g2r,ressource_utilise);

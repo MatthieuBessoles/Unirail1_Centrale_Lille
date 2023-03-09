@@ -37,7 +37,7 @@ int main() {
 	
 
 	int sd_g2r = connect_to_server(SERVER_IP,SERVER_PORT);
-	printf("Bien connecté au serveur g2r\n");
+	printf("[TRAIN 1]Bien connecté au serveur g2r\n");
 	//2. Connexion du train à l'API en XWAY
 	//int sd_api = connect_to_server(API_IP,API_PORT);
 	int type = 2;
@@ -46,7 +46,7 @@ int main() {
 		for(i = 0; i <length_parcourt; i++){
 			//1. On vérifie si le service demandé est une ressource critique
 			int mon_service = liste_parcourt[i];
-			printf("mon service demandé est : %d\n",mon_service);
+			printf("[TRAIN 1]mon service demandé est : %d\n",mon_service);
 			//2. Si oui : demande au G2R, sinon : demande directement à l'API
 			if (is_ressource_fun(mon_service)){
 				//1. Création et envoi du message à envoyer au G2R
@@ -66,7 +66,7 @@ int main() {
 				
 				//4. Lecture de cette réponse, il faut également récupérer l'ID de la ressource pour la restitution
 				int reception_taille =strlen((char*)messagage_g2r_rep);
-				printf("Message reçu : ");
+				printf("[TRAIN 1]Message reçu : ");
     				afficher_trame ( messagage_g2r_rep , reception_taille);
 				//Dans la trame de retour se trouvent
 				int *list_param_received = lect_req_g2r(messagage_g2r_rep, reception_taille);
@@ -83,7 +83,7 @@ int main() {
 					//5.1. Création et envoi de la trame XWAY vers l'API
 					requete_xway(list_param_received[i], TRAIN_ID, TRAME_ID, XWAY_HEXA_TRAIN, type, sd_api); //A VOIR TYPE (AIGUILLAGE OU TRONCON)
 				}*/
-				printf("je demande l'accession à l'API\n");
+				printf("[TRAIN 1]je demande l'accession à l'API\n");
 				sleep(3);
 				//6. Restitution de la ressource
 				creation_message_vers_g2r(restitution_g2r, TRAIN_ID, mon_service,sd_g2r,ressource_utilise);
@@ -95,13 +95,13 @@ int main() {
         				close(sd_g2r);
         				return NULL;
     				}
-    				printf("Message reçu : ");
+    				printf("[TRAIN 1]Message reçu : ");
     				afficher_trame(confirmation_g2r_rep, 2);
 			}
 				
 			else {
 				//1. Création et envoi de la trame XWAY à à l'API				
-				printf("réation et envoi de la trame XWAY à à l'API pour ce service non critique \n");
+				printf("[TRAIN 1]réation et envoi de la trame XWAY à à l'API pour ce service non critique \n");
 				//requete_xway(mon_service, TRAIN_ID, TRAME_ID, XWAY_HEXA_TRAIN, type, sd_api);
 				
 				}

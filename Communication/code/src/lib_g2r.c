@@ -201,16 +201,16 @@ void afficher_trame(unsigned char* trame,int taille) {
     	printf("\n");
 }
 int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd,int id_ressource){
-	printf("Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
+	printf("[G2R]Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
 	int list_size = sizeof(list_services) / sizeof(int);
-	printf("il faut demander %i services \n",list_size);
+	printf("[G2R]il faut demander %i services \n",list_size);
 	int NB_OCTETS;
 	if (message_type == 2){
 		NB_OCTETS = 3+list_size;}
 	else
 		{NB_OCTETS = 2;
 	}
-	printf("nb d'octets = %i\n",NB_OCTETS);
+	printf("[G2R]nb d'octets = %i\n",NB_OCTETS);
 	
 	//unsigned char* message = (unsigned char*)malloc((list_size));  // Allocate memory for the XWAY message
 	switch (message_type){
@@ -227,21 +227,21 @@ int creation_message_vers_train(unsigned char * message,int message_type, int id
     }				
 			break;
 		case 4:	//acknowledge fin d'utilisation de la ressource	
-			printf("message de type ackowledge\n");
+			printf("[G2R]message de type ackowledge\n");
 			message[0] = int_to_hex(message_type);
 			message[1] = int_to_hex(id_train);	
 			break;
 		default:
 			
-			printf("Pas le bon type de message");
+			printf("[G2R]Pas le bon type de message");
 			exit(EXIT_FAILURE);
 		}
-	printf("le message envoyé par le G2R vers le train est : ");
+	printf("[G2R]le message envoyé par le G2R vers le train est : ");
 	afficher_trame(message,NB_OCTETS);
 	size_t message_size = strlen((char*)message);
-        printf("message de taille %ld\n",message_size);
+        printf("[G2R]message de taille %ld\n",message_size);
         write(sock_fd, message, message_size);
-   	printf("Message envoyé au train %d\n",2);
+   	printf("[G2R]Message envoyé au train %d\n",id_train);
    	return 0;
 }
      
