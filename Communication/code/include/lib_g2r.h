@@ -3,7 +3,7 @@
 /*		P R O T O T Y P E S    D E    F O N C T I O N S				*/
 /* ------------------------------------------------------------------------ */
 
-int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd);
+int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd,int id_ressource);
 void afficher_trame(unsigned char* trame,int taille) ;
 int hex_to_int(unsigned char hex) ;
 unsigned int int_to_hex(int num);
