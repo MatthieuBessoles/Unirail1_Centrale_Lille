@@ -98,7 +98,7 @@ char* creation_message_vers_g2r(int message_type, int id_train, float pos, float
     	memcpy(frame + sizeof(int) * 2 + sizeof(float)*2, &(train_message_envoi.id_service_1), sizeof(int));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(train_message_envoi.id_service_2), sizeof(int));
     	memcpy(frame + sizeof(int) * 4 + sizeof(float)*2, &(train_message_envoi.id_service_3), sizeof(int));
-	//write(sock_fd, frame, frame_length);
+	write(sock_fd, frame, frame_length);
     	return frame;
 }
 	

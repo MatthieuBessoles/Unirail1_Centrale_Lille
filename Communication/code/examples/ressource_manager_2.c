@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     	int *client_fd_ptr_1 = malloc(sizeof(int));
         *client_fd_ptr_1 = new_sockfd_1;
         
-        new_sockfd_2 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+        /*new_sockfd_2 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
 	printf("jaccepte la connexion au train \n");
     	if (new_sockfd_2 < 0) {
         	perror("Erreur lors de l'acceptation de la connexion entrante");
@@ -129,17 +129,17 @@ int main(int argc, char *argv[]) {
     		}
     		
     	int *client_fd_ptr_3 = malloc(sizeof(int));
-        *client_fd_ptr_3 = new_sockfd_3;
+        *client_fd_ptr_3 = new_sockfd_3;*/
         
     	/* Création des 3 threads pour les trains*/
 	CHECK_T( pthread_create (&client_trains[0], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_1), " pthread_create ()"); //train 1
   
-	CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_2), " pthread_create ()"); //train 2
-	CHECK_T( pthread_create (&client_trains[2], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_3), " pthread_create ()"); //train 3
+	/*CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_2), " pthread_create ()"); //train 2
+	CHECK_T( pthread_create (&client_trains[2], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_3), " pthread_create ()"); //train 3*/
 		
 	CHECK_T ( pthread_join (client_trains[0], (void **) &status )," pthread_join ()") ;
-	CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
-	CHECK_T ( pthread_join (client_trains[2], (void **) &status )," pthread_join ()") ;
+	/*CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
+	CHECK_T ( pthread_join (client_trains[2], (void **) &status )," pthread_join ()") ;*/
 			
 	sleep(5);
         // Déverrouille la ressource en relâchant le sémaphore
@@ -148,8 +148,8 @@ int main(int argc, char *argv[]) {
 	printf("[G2R] Fermeture des connexions\n");
     	// Ferme les connexions
     	close(new_sockfd_1);
-    	close(new_sockfd_2);
-    	close(new_sockfd_3);
+    	/*close(new_sockfd_2);
+    	close(new_sockfd_3);*/
     	close(server_fd);
 
 
