@@ -10,22 +10,33 @@
 #include <unistd.h>
 
 
+typedef struct {
+    int message_type;
+    int id_train;
+    float position;
+    float speed;
+    int id_service_1;
+    int id_service_2;
+    int id_service_3;
+} TrainMessage_envoi;
 
+typedef struct {
+    int message_type;
+    int id_train;
+    int num_services;
+    float speed;
+    float dist;
+    int * services_ok;
+} G2RMessage_reception;
 
 /* ------------------------------------------------------------------------ */
 /*		P R O T O T Y P E S    D E    F O N C T I O N S				*/
 /* ------------------------------------------------------------------------ */
 
 
-int *lect_req_g2r(unsigned char* message_recu, int message_size);
-unsigned int int_to_hex(int num);
-int hex_to_int(unsigned char hex);
-int is_ressource_fun(int id_service);
-int * ressource_2_infra(int id_ressource);
+void lect_req_g2r(char* message_recu,G2RMessage_reception* g2r_message);
 int convert_id_to_dico(int id, int type);
 int mot_ecriture(unsigned char id_train);
-int requete_xway(int id_requete, int id_train, int id_trame, unsigned char XWAY_HEXA_TRAIN, int type, int sock_fd);
-int creation_message_vers_g2r(int message_type, int id_train, int id_service,int sock_fd, int id_ressource);
+char* creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd);
 int connect_to_server(char *remoteip, int remoteport);
-void afficher_trame(unsigned char* trame,int taille);
 void close_socket(int sock) ;

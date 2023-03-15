@@ -26,42 +26,23 @@
 /*			E N T Ê T E S    P E R S O N N E L L E S						*/
 /* ------------------------------------------------------------------------ */
 #include "../include/lib_g2r.h"
-/* ------------------------------------------------------------------------ */
-		/* D É F I N I T I O N S  D E  T Y P E S */
-/* ------------------------------------------------------------------------ */
-typedef void * (* pf_t)(void *) ;
+#include "../include/lib_train.h"
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
 /* ------------------------------------------------------------------------ */
+
+
 
 #define NUM_RESSOURCES 10
 #define LOCALIP "127.0.0.1" //IP du PC gestionnaire de ressources
 #define LOCALPORT 8890 //Port du processus gestionnaire de ressource
 #define LOCALPORT_T3 8888 //Port du processus gestionnaire de ressource
-#define REMOTEPORT_T1_T3 3000 //T1/2 sont gérés sur le même PC
-#define REMOTEPORT_T2_T4 2000 //T3/4 sont gérés sur le même PC
-#define REMOTEIP_T1_T2 "127.0.0.1" //A MODIFIER
-#define REMOTEIP_T3_T4 "127.0.0.1" //A MODIFIER
+#define REMOTEPORT_T1 3000 
+#define REMOTEIP_T1 "127.0.0.1" //A MODIFIER
 #define allocation_train 2 //bonne allocation de la ressource
 #define acknowledge_fin_train 4 //acknowledge de fin d'utilisation de la ressource 
-#define NB_TRAINS 4
-/* ------------------------------------------------------------------------ */
-/*			M A C R O - F O N C T I O N S						*/
-/* ------------------------------------------------------------------------ */
-#define CHECKERROR(var,val,msg)  if (var ==val) {perror (msg);}
-
-# define CHECK_T(status , msg)						\
-	if (0 != ( status )) {						\
-		fprintf (stderr , " pthread erreur : %s\n", msg) ; 	\
-		exit ( EXIT_FAILURE ) ;					\
-	}
-	
-# define CHECK(status , msg)						\
-	if (-1 == ( status )) {						\
-	perror (msg) ;							\
-	exit( EXIT_FAILURE ) ;						\
-	}
-
+#define NB_TRAINS 3
+#define MAX_MESSAGE_LENGTH 100
 
 
 /* ------------------------------------------------------------------------ */
@@ -83,9 +64,9 @@ int main(int argc, char *argv[]) {
 	pthread_t client_trains[NB_TRAINS];
 	double * status;
 		
-    	//déclaration des sockets pour les 4 trains
+    	//déclaration des sockets pour les 3 trains
     
-    	int server_fd, new_sockfd_1,new_sockfd_2,new_sockfd_3,new_sockfd_4;
+    	int server_fd, new_sockfd_1,new_sockfd_2,new_sockfd_3;
     
     	socklen_t clilen;
     	struct sockaddr_in serv_addr;
@@ -118,8 +99,8 @@ int main(int argc, char *argv[]) {
     	}
     	
 
-    	// Écoute pour les 4 trains
-    	listen(server_fd, 4);
+    	// Écoute pour les 3 trains
+    	listen(server_fd, 3);
     	clilen = sizeof(serv_addr); //même taille peut importe le train
     	
     	new_sockfd_1 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
@@ -142,7 +123,7 @@ int main(int argc, char *argv[]) {
     	
         
         new_sockfd_3 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
-	printf("jaccepte la connexion au train \n");
+	printf("jaccepte la connexion au train 3 \n");
     	if (new_sockfd_3 < 0) {
         	perror("Erreur lors de l'acceptation de la connexion entrante");
     		}
@@ -150,29 +131,15 @@ int main(int argc, char *argv[]) {
     	int *client_fd_ptr_3 = malloc(sizeof(int));
         *client_fd_ptr_3 = new_sockfd_3;
         
-     	new_sockfd_4 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
-	printf("jaccepte la connexion au train \n");
-    	if (new_sockfd_4 < 0) {
-        	perror("Erreur lors de l'acceptation de la connexion entrante");
-    		}
-    		
-    	int *client_fd_ptr_4 = malloc(sizeof(int));
-        *client_fd_ptr_4 = new_sockfd_4;
-        
-        
-        printf("je rentre de le while \n");
-    	/* Création des 4 threads pour les trains*/
+    	/* Création des 3 threads pour les trains*/
 	CHECK_T( pthread_create (&client_trains[0], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_1), " pthread_create ()"); //train 1
   
 	CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_2), " pthread_create ()"); //train 2
-		/* Création des 4 threads pour les trains*/
 	CHECK_T( pthread_create (&client_trains[2], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_3), " pthread_create ()"); //train 3
-	CHECK_T( pthread_create (&client_trains[3], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_4), " pthread_create ()"); //train 4
 		
 	CHECK_T ( pthread_join (client_trains[0], (void **) &status )," pthread_join ()") ;
 	CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
 	CHECK_T ( pthread_join (client_trains[2], (void **) &status )," pthread_join ()") ;
-	CHECK_T ( pthread_join (client_trains[3], (void **) &status )," pthread_join ()") ;
 			
 	sleep(5);
         // Déverrouille la ressource en relâchant le sémaphore
@@ -183,7 +150,6 @@ int main(int argc, char *argv[]) {
     	close(new_sockfd_1);
     	close(new_sockfd_2);
     	close(new_sockfd_3);
-    	close(new_sockfd_4);
     	close(server_fd);
 
 
@@ -205,10 +171,10 @@ void * gestion_train(void *client_sock_ptr){
 	
     	while(1){
     		int client_sock = *((int *)client_sock_ptr);
-    		unsigned char message_train[message_size];
-		printf("[G2R] gestion du train %d\n",client_sock);
-    	// 1. Lecture de la demande du client
-    		int n = read(client_sock, message_train, sizeof(message_train));
+    		char message_recu[MAX_MESSAGE_LENGTH];
+    		// 1. Lecture de la trame du train
+    		TrainMessage_reception message_train_recu;
+    		int n = read(client_sock, message_recu, MAX_MESSAGE_LENGTH);
     		if (n < 0) {
         		perror("Erreur lors de la lecture de la demande du client");
         		close(client_sock);
@@ -216,20 +182,12 @@ void * gestion_train(void *client_sock_ptr){
     		}
     	
     		printf("[G2R]Message reçu : ");
-    		afficher_trame(message_train,message_size);
-    		// 2. Identification de la ressource demandée
-    		int *requete = lect_req(message_train, message_size);
-    		printf("[G2R]recupération de la requête int ok\n");
-    		for (int i = 0; i<message_size;i++){
-    			printf("%d\n",requete[i]);
-    			}
-    		//2.2 Récupération de la ressource et des services associés
-    		int message_type = requete[0];
-    		int train_demandeur_id = requete[1];
-    		int *my_services;
-    		int id_service_demande;
-    		printf("Le train %d envoie un message de type %d \n",train_demandeur_id,message_type);
-    		switch (message_type){
+    		lect_req_train(message_recu,&message_train_recu);
+    		// 2. Lancement du thread approprié
+    		lancement_thread(&message_train_recu, client_sock);
+    		return NULL;}
+    		}
+    		/*switch (message_type){
     			case 1:
     				id_service_demande = requete[2];
     				printf("Il s'agit d'une demande d'accès au service %d jugé critique par le train %d\n",id_service_demande,train_demandeur_id);
@@ -244,7 +202,7 @@ void * gestion_train(void *client_sock_ptr){
     				/*if (my_ressource != 1){
     					printf("Pas le bon type de message ! \n");
     					exit(EXIT_FAILURE);
-    					}*/
+    					}
     				//autres actions à mener
     				//3. Tentative d'accès à la ressource
     				printf("Tentative d'accès à la ressource %d\n",my_ressource);
@@ -285,5 +243,5 @@ void * gestion_train(void *client_sock_ptr){
     	return NULL;
 	
 }
-
+*/
 

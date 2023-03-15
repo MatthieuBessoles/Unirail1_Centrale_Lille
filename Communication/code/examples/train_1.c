@@ -14,8 +14,6 @@
 
 #define SERVER_IP "127.0.0.1" // Adresse IP du serveur G2R
 #define SERVER_PORT 8890 // Port du serveur G2R
-#define API_IP "10.31.125.14" // Adresse IP de l'API
-#define API_PORT 502 // Port du serveur G2R
 #define TRAIN_ID 1 // Numéro du train
 #define TRAME_ID 1
 #define XWAY_HEXA_TRAIN 0x01 //train 1
@@ -30,7 +28,7 @@
 
 
 int main() {
-	int liste_parcourt[50] = {43,31,50,23,52,32,50,33,29,53,11,19};/*à remplir avec le parcourt */
+	int liste_parcourt[50] = {1,2,3, 81,70,78,77,13,104,105,7,8,9,92};/*à remplir avec le parcourt */
 
 	//1. Connexion du train au G2R en TCP/IP
 	int length_parcourt = 12;
@@ -38,8 +36,6 @@ int main() {
 
 	int sd_g2r = connect_to_server(SERVER_IP,SERVER_PORT);
 	printf("[TRAIN 1]Bien connecté au serveur g2r\n");
-	//2. Connexion du train à l'API en XWAY
-	//int sd_api = connect_to_server(API_IP,API_PORT);
 	int type = 2;
 	while(1){ //le train tourne en permanance sur son circuit
 		int i; //index du service demandé dans liste_parcourt
@@ -47,7 +43,7 @@ int main() {
 			//1. On vérifie si le service demandé est une ressource critique
 			int mon_service = liste_parcourt[i];
 			printf("[TRAIN 1]mon service demandé est : %d\n",mon_service);
-			//2. Si oui : demande au G2R, sinon : demande directement à l'API
+			
 			if (is_ressource_fun(mon_service)){
 				//1. Création et envoi du message à envoyer au G2R
 				int accepte = 0;

@@ -10,6 +10,10 @@
 #include <pthread.h>
 //à changer avec le chemin de la librairie
 #include "../include/lib_g2r.h"
+#include "../include/lib_train.h"
+
+
+
 
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
@@ -19,55 +23,61 @@
 
 
 /* ------------------------------------------------------------------------ */
-/*		V A R I A  B L E S     G L O B A L E S						*/
+/*		V A R I A B L E S     G L O B A L E S						*/
 /* ------------------------------------------------------------------------ */
-int NB_MAX_SERVICES = 6;
-int NUM_RESSOURCES = 10;
+double * status;
+int NB_MAX_SERVICES = 12;
+int NUM_RESSOURCES = 9;
 
-int R_1 [] = {32,42}; // ensemble des id des services qui appartiennent à la ressource 1
+int R_1 [] = {71,91,70,90,78,108,76,106,72,102,25,26}; // ensemble des id des services qui appartiennent à la ressource 1
 int length_1 = sizeof(R_1) / sizeof(R_1[0]);
-int R_2 [] = {33,43}; // ensemble des id des services qui appartiennent à la ressource 2
+int R_2 [] = {12}; // ensemble des id des services qui appartiennent à la ressource 2
 int length_2 = sizeof(R_2) / sizeof(R_2[0]);
-int R_3 [] = {29}; // ensemble des id des services qui appartiennent à la ressource 3
+int R_3 [] = {5,13}; // ensemble des id des services qui appartiennent à la ressource 3
 int length_3 = sizeof(R_3) / sizeof(R_3[0]);
-int R_4 [] = {53,63,11,31}; // ensemble des id des services qui appartiennent à la ressource 4
+int R_4 [] = {74,104,75,105,7}; // ensemble des id des services qui appartiennent à la ressource 4
 int length_4 = sizeof(R_4) / sizeof(R_4[0]);
-int R_5 [] = {32,12,9,13,33}; // ensemble des id des services qui appartiennent à la ressource 5
+int R_5 [] = {8}; // ensemble des id des services qui appartiennent à la ressource 5
 int length_5 = sizeof(R_5) / sizeof(R_5[0]);
-int R_6 [] = {7,37}; // ensemble des id des services qui appartiennent à la ressource 6
+int R_6 [] = {9}; // ensemble des id des services qui appartiennent à la ressource 6
 int length_6 = sizeof(R_6) / sizeof(R_6[0]);
-int R_7 [] = {27}; // ensemble des id des services qui appartiennent à la ressource 7
+int R_7 [] = {62,92,63,93,64,94,65,95}; // ensemble des id des services qui appartiennent à la ressource 7
 int length_7 = sizeof(R_7) / sizeof(R_7[0]);
-int R_8 [] = {28}; // ensemble des id des services qui appartiennent à la ressource 8
+int R_8 [] = {66,96}; // ensemble des id des services qui appartiennent à la ressource 8
 int length_8 = sizeof(R_8) / sizeof(R_8[0]);
-int R_9 [] = {52,62}; // ensemble des id des services qui appartiennent à la ressource 9
+int R_9 [] = {11}; // ensemble des id des services qui appartiennent à la ressource 9
 int length_9 = sizeof(R_9) / sizeof(R_9[0]);
-int R_10 [] = {50,60};// ensemble des id des services qui appartiennent à la ressource 10
-int length_10 = sizeof(R_10) / sizeof(R_10[0]);
-
 
 
 /* ------------------------------------------------------------------------ */
 /*		CONNEXIONS TCP/IP et XWAY					*/
-/* ------------------------------------------------------------------------ */	
+/* ------------------------------------------------------------------------ */
 
-int *lect_req(unsigned char* message_recu, int message_size){
-	//cette fonction lit la requête reçue et en extrait les informations utilisées: type de message (req ou ack), id_service demandé et id_train qui le demande. L'id sera ensuite utilisé dans la fonction service_to_ressource
-        printf("Le message recu contient %i octets\n",message_size);
-        int id_service_demande;
-        int id_train_demandeur;
-        int message_type;
+
+
+void lect_req_train(char* message_recu,TrainMessage_reception* train_message){
+	//cette fonction lit la requête reçue et en extrait les informations utilisées en fonction du type de message, puis renvoie la réponse sous forme de structure avec les informations rentrées
+	printf("Les éléments reçus sont : \n");
+	memcpy(&(train_message->message_type), message_recu, sizeof(int));
+        printf("message_type : %d\n",train_message->message_type);
+        memcpy(&(train_message->id_train), message_recu + sizeof(int), sizeof(int));
+    	memcpy(&(train_message->position), message_recu + sizeof(int) * 2, sizeof(float));
+    	memcpy(&(train_message->speed), message_recu + sizeof(int) * 2 + sizeof(float), sizeof(float));
+    	memcpy(&(train_message->id_service_1), message_recu + sizeof(int) * 2 + sizeof(float)*2, sizeof(int));
+    	memcpy(&(train_message->id_service_2), message_recu + sizeof(int) * 3 + sizeof(float)*2, sizeof(int));
+    	memcpy(&(train_message->id_service_3), message_recu + sizeof(int) * 4 + sizeof(float)*2, sizeof(int));
         
-        int* liste_param_recus = malloc(message_size * sizeof(int));
-        
-        for (int i=0;i<message_size;i++){
-        	
-        	liste_param_recus[i] = hex_to_int((unsigned char)message_recu[i]);
-		printf("Message_content : %d\n",liste_param_recus[i]);
-		}
-        return liste_param_recus;
+        printf("service_type : %d\n",train_message->message_type);
+        printf("id_train : %d\n",train_message->id_train);
+        printf("position : %f\n",train_message->position);
+        printf("speed : %f\n",train_message->speed);
+        printf("id_service_1 : %d\n",train_message->id_service_1);
+        printf("id_service_2 : %d\n",train_message->id_service_2);
+        printf("id_service_3 : %d\n",train_message->id_service_3);
 	
-}
+		}
+		
+		
 int service_to_ressource(int id_service){
 	int id_ressource;
 	for (int i=0; i<length_1;i++){
@@ -124,12 +134,6 @@ int service_to_ressource(int id_service){
            		break;
            		}
            	}
-         for (int i=0; i<length_10;i++){
-		if (R_10[i] == id_service) {
-            		id_ressource = 10;
-           		break;
-           		}
-           	}
 	
 	return id_ressource;
 	}
@@ -164,9 +168,6 @@ int * ressource_2_list_services(int id_ressource){
 		case 9:
 			list_services = R_9;
 			break;
-		case 10:
-			list_services = R_10;
-			break;
 		default:
 			printf("Problème avec la correspondance ressource -> services");
 			exit(0);
@@ -175,74 +176,80 @@ int * ressource_2_list_services(int id_ressource){
 	return list_services;
 	}
 
-void generate_hex_message(int* int_list, int list_size) {
-    unsigned char* message = malloc(list_size * sizeof(unsigned char) * 2);
-    for (int i = 0; i < list_size; i++) {
-        sprintf((char*)(message + (i * 2)), "%02X", int_list[i]);
-    }
-    printf("%s\n", message);
-    free(message);
-}
 
-unsigned int int_to_hex(int num) {
-  return (unsigned int)num;
-}
 
-int hex_to_int(unsigned char hex) {
-  return (int)hex;
-}
 
-void afficher_trame(unsigned char* trame,int taille) {
-	printf("la taille est de : %i\n",taille);
-    	int i;
-    	for (i = 0; i < taille; i++) {
-        	printf("%04x ", trame[i]);
-    	}
-    	printf("\n");
-}
-int creation_message_vers_train(unsigned char * message,int message_type, int id_train, int* list_services, int id_service, int accepte, int sock_fd,int id_ressource){
+/* ------------------------------------------------------------------------ */
+/*			C R E A T I O N  D E S  M E S S A G E S 			*/
+/* ------------------------------------------------------------------------ */		
+
+
+
+char* creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd){
 	printf("[G2R]Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
-	int list_size = sizeof(list_services) / sizeof(int);
-	printf("[G2R]il faut demander %i services \n",list_size);
-	int NB_OCTETS;
-	if (message_type == 2){
-		NB_OCTETS = 3+list_size;}
-	else
-		{NB_OCTETS = 2;
-	}
-	printf("[G2R]nb d'octets = %i\n",NB_OCTETS);
+	// Allouer de la mémoire pour la trame
+	G2RMessage_envoi g2r_message_envoi;
+    	int frame_length = sizeof(int) * (3+num_services_ok) + sizeof(float) * 2;
+    	char* frame = (char*) malloc(frame_length);
 	
-	//unsigned char* message = (unsigned char*)malloc((list_size));  // Allocate memory for the XWAY message
-	switch (message_type){
-		case 2:	
-			//allocation de la ressource au train id_train, composée de plusieurs services
-			
-			message[0] = int_to_hex(message_type);
-			printf("message_0 = %hx\n",message[0]);
-			message[1] = int_to_hex(id_train);
-			message[2] = int_to_hex(list_size);
-			message[3] = int_to_hex(id_ressource);
-			for (int i = 1; i <list_size+1; i++) {
-				message[i+3] = int_to_hex(list_services[i]); 
-    }				
-			break;
-		case 4:	//acknowledge fin d'utilisation de la ressource	
-			printf("[G2R]message de type ackowledge\n");
-			message[0] = int_to_hex(message_type);
-			message[1] = int_to_hex(id_train);	
-			break;
-		default:
-			
-			printf("[G2R]Pas le bon type de message");
-			exit(EXIT_FAILURE);
-		}
-	printf("[G2R]le message envoyé par le G2R vers le train est : ");
-	afficher_trame(message,NB_OCTETS);
-	size_t message_size = strlen((char*)message);
-        printf("[G2R]message de taille %ld\n",message_size);
-        write(sock_fd, message, message_size);
-   	printf("[G2R]Message envoyé au train %d\n",id_train);
-   	return 0;
+	
+	g2r_message_envoi.message_type = message_type;
+    	g2r_message_envoi.id_train = id_train;
+    	g2r_message_envoi.num_services = num_services_ok;
+    	g2r_message_envoi.speed = speed;
+    	g2r_message_envoi.dist =dist;
+    	g2r_message_envoi.services_ok = services;
+    	// Copier les données de train_message dans la trame
+    	memcpy(frame, &(g2r_message_envoi.message_type), sizeof(int));
+    	memcpy(frame + sizeof(int), &(g2r_message_envoi.id_train), sizeof(int));
+    	memcpy(frame + sizeof(int) * 2, &(g2r_message_envoi.num_services), sizeof(int));
+    	memcpy(frame + sizeof(int) * 3, &(g2r_message_envoi.speed), sizeof(float));
+    	memcpy(frame + sizeof(int) * 3 + sizeof(float), &(g2r_message_envoi.dist), sizeof(float));
+    	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(g2r_message_envoi.services_ok), num_services_ok*sizeof(int));
+	//write(sock_fd, frame, frame_length);
+    	return frame;
 }
-     
+ 
+
+// Fonction pour traiter un message
+void handle_message_type(void* args) {
+    // Traiter le message
+    thread_argument *t_args = (thread_argument*)args;
+    int sockfd = t_args->sockfd;
+    int message_type = t_args->message_type;
+    printf("[G2R] Gestion d'un message de type %d\n",message_type);
+    
+    /*write(sockfd, message, strlen(message));
+    close(sockfd);
+    pthread_exit(NULL);*/
+    // Envoyer une réponse "message bien reçu"
+    return NULL;
+}
+
+// Fonction pour traiter un message de type 2
+void handle_message_type_2(char* message) {
+    // Traiter le message de type 2
+    // Envoyer une réponse "message bien reçu"
+    return NULL;
+}
+
+// Thread pour gérer un train
+
+
+/* ------------------------------------------------------------------------ */
+/*		C R E A T I O N  D E S  T H R E A D S 
+		D E  T R A I T E M E N T  D E S  M E S S A G E S			*/
+/* ------------------------------------------------------------------------ */
+
+void lancement_thread(TrainMessage_reception* train_message, int sock){
+	printf("Lancement du thread de gestion de message");
+	thread_argument* t_args;
+	int message_type = train_message->message_type;
+	t_args->message_type = message_type;
+	t_args->sockfd = sock;
+	pthread_t thread_id;
+	printf("Lancement du thread de gestion de message\n");
+	CHECK_T( pthread_create (&thread_id, NULL , (pf_t)handle_message_type , (void *)t_args), " pthread_create ()");
+	CHECK_T ( pthread_join (thread_id, (void **) &status )," pthread_join ()") ; 
+	}
 

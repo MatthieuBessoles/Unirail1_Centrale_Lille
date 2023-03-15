@@ -30,7 +30,7 @@
 
 
 int main() {
-	int liste_parcourt[50] = {44,7,11,63,27,28,13,49,12,24,60,5,6,44};/*à remplir avec le parcourt */
+	int liste_parcourt[50] = {21,64,65,17,66,67,11,70,108,76,26,25,102,103,20,69};/*à remplir avec le parcourt */
 
 	//1. Connexion du train au G2R en TCP/IP
 	int length_parcourt = 12;
