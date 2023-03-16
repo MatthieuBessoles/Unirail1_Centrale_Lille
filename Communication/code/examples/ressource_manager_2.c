@@ -42,7 +42,7 @@
 #define allocation_train 2 //bonne allocation de la ressource
 #define acknowledge_fin_train 4 //acknowledge de fin d'utilisation de la ressource 
 #define NB_TRAINS 3
-#define MAX_MESSAGE_LENGTH 100
+#define MAX_MESSAGE_LENGTH 500
 
 
 /* ------------------------------------------------------------------------ */
@@ -173,16 +173,11 @@ void * gestion_train(void *client_sock_ptr){
     		int client_sock = *((int *)client_sock_ptr);
     		char message_recu[MAX_MESSAGE_LENGTH];
     		// 1. Lecture de la trame du train
+		int n = read(client_sock,message_recu,MAX_MESSAGE_LENGTH);
+    		
     		TrainMessage_reception message_train_recu;
-    		int n = read(client_sock, message_recu, MAX_MESSAGE_LENGTH);
-    		if (n < 0) {
-        		perror("Erreur lors de la lecture de la demande du client");
-        		close(client_sock);
-        		return NULL;
-    		}
-    	
     		printf("[G2R]Message reçu : ");
-    		lect_req_train(message_recu,&message_train_recu);
+    		lect_req_train(message_recu, &message_train_recu, client_sock);
     		// 2. Lancement du thread approprié
     		lancement_thread(&message_train_recu, client_sock);
     		return NULL;}

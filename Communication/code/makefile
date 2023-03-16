@@ -1,7 +1,8 @@
 all: libs_g2r libs_train test g2r
 g2r: bin/ressource_manager_stat bin/ressource_manager_dyn
 train: bin/train_1_stat bin/train_1_dyn bin/train_3_stat bin/train_3_dyn bin/train_2_stat bin/train_2_dyn
-test: bin/test_mess_indu_stat bin/test_mess_indu_train_stat bin/test_connexion_thread_stat
+test:bin/test_connexion_thread_stat 
+#bin/test_mess_indu_stat bin/test_mess_indu_train_stat
 libs_g2r :lib/lib_g2r.a lib/lib_g2r.so
 libs_train :lib/lib_train.a lib/lib_train.so
 

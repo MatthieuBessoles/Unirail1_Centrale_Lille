@@ -16,6 +16,6 @@ int main(){
 	int sock_fd = 3;
 	TrainMessage_envoi train_message;
 	char * message = creation_message_vers_g2r(message_type, id_train,pos,speed,service_1, service_2,service_3,sock_fd);
-	lect_req_train(message, &train_message);
+	lect_req_train(message, &train_message, sock_fd);
 	return 0;
 	}

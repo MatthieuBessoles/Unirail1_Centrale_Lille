@@ -19,6 +19,7 @@
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
 /* ------------------------------------------------------------------------ */
 #define DEBUG
+#define MAX_MESSAGE_LENGTH 500
 
 
 #define Tk 1
@@ -75,11 +76,11 @@ int mot_ecriture(unsigned char id_train){
 
 
 
-char* creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd){
+void creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd){
 	printf("Création d'un message de type %d par le train d'id %d \n", message_type, id_train);
 	// Allouer de la mémoire pour la trame
 	TrainMessage_reception train_message_envoi;
-    	int frame_length = sizeof(int) * 3 + sizeof(float) * 2;
+    	int frame_length = sizeof(int) * 5 + sizeof(float) * 2;
     	char* frame = (char*) malloc(frame_length);
 	
 	
@@ -99,7 +100,7 @@ char* creation_message_vers_g2r(int message_type, int id_train, float pos, float
     	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(train_message_envoi.id_service_2), sizeof(int));
     	memcpy(frame + sizeof(int) * 4 + sizeof(float)*2, &(train_message_envoi.id_service_3), sizeof(int));
 	write(sock_fd, frame, frame_length);
-    	return frame;
+    	free(frame);
 }
 	
 
@@ -149,22 +150,24 @@ void close_socket(int sock) {
 
 
 
-void lect_req_g2r(char* message_recu,G2RMessage_reception* g2r_message){
+void lect_req_g2r(char* message_recu, G2RMessage_reception* g2r_message, int sock_fd){
 	//cette fonction lit la requête reçue et en extrait les informations utilisées en fonction du type de message, puis renvoie la réponse sous forme de structure avec les informations rentrées
 	printf("Les éléments reçus sont : \n");
+	
 	memcpy(&(g2r_message->message_type), message_recu, sizeof(int));
         printf("message_type : %d\n",g2r_message->message_type);
         memcpy(&(g2r_message->id_train), message_recu + sizeof(int), sizeof(int));
-    	memcpy(&(g2r_message->num_services), message_recu + sizeof(int) * 2, sizeof(int));
-    	memcpy(&(g2r_message->speed), message_recu + sizeof(int) * 3, sizeof(float));
-    	memcpy(&(g2r_message->dist), message_recu + sizeof(int) * 3 + sizeof(float), sizeof(float));
-    	memcpy(&(g2r_message->services_ok), message_recu + sizeof(int) * 3 + sizeof(float)*2, sizeof(int)*g2r_message->num_services);
-        
-        printf("service_type : %d\n",g2r_message->message_type);
         printf("id_train : %d\n",g2r_message->id_train);
-        printf("id_train : %d\n",g2r_message->num_services);
-        printf("speed : %f\n",g2r_message->speed);
-        printf("dist : %f\n",g2r_message->dist);
+    	memcpy(&(g2r_message->num_services), message_recu + sizeof(int) * 2, sizeof(int));
+    	printf("id_train : %d\n",g2r_message->num_services);
+    	memcpy(&(g2r_message->speed), message_recu + sizeof(int) * 3, sizeof(float));
+    	printf("speed : %f\n",g2r_message->speed);
+    	memcpy(&(g2r_message->dist), message_recu + sizeof(int) * 3 + sizeof(float), sizeof(float));
+    	printf("dist : %f\n",g2r_message->dist);
+    	printf("ajout des services  en cours\n");
+    	memcpy(&((g2r_message->services_ok)), message_recu + sizeof(int) * (3) + sizeof(float)*2, sizeof(int)*g2r_message->num_services);
+    	printf("ajout des services  fait\n");
+             
 	
-		}
+}
 

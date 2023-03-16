@@ -19,7 +19,7 @@
 #define XWAY_HEXA_TRAIN 0x01 //train 1
 #define demande_g2r 1 //premier message vers le G2R pour réservation de la ressource
 #define restitution_g2r 3 //fin d'utilisation de la ressource du train vers g2R 
-
+#define MAX_MESSAGE_LENGTH 700
 
 /* ------------------------------------------------------------------------ */
 /*		V A R I A  B L E S     G L O B A L E S						*/
@@ -45,7 +45,7 @@ int main() {
 			printf("[TRAIN 1]mon service demandé est : %d\n",mon_service);
 			
 			printf("Hello world\n");
-			int message_type = 5;
+			int message_type = 1;
 			int id_train = 1;
 			float pos = 3.5;
 			float speed = 30.3;
@@ -55,10 +55,12 @@ int main() {
 			int service_3 = 16;
 			//int id_zone_suivi = 2;
 			//int id_serv_ok = 3;
-			int sock_fd = 3;
-			TrainMessage_envoi train_message;
-			char * message = creation_message_vers_g2r (message_type, id_train,pos,speed,service_1, service_2,service_3,sd_g2r);
-			lect_req_train(message, &train_message);
+			char message_recu_train[MAX_MESSAGE_LENGTH];
+			
+			G2RMessage_reception train_message;
+			creation_message_vers_g2r (message_type, id_train,pos,speed,service_1, service_2,service_3,sd_g2r);
+			int n = read(sd_g2r,message_recu_train, MAX_MESSAGE_LENGTH);
+			lect_req_g2r(message_recu_train, &train_message,sd_g2r);
 
     	} //fin du parcourt
     sleep(5);

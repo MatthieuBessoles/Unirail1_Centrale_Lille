@@ -55,8 +55,9 @@ int length_9 = sizeof(R_9) / sizeof(R_9[0]);
 
 
 
-void lect_req_train(char* message_recu,TrainMessage_reception* train_message){
+void lect_req_train(char* message_recu, TrainMessage_reception* train_message,int sock_fd){
 	//cette fonction lit la requête reçue et en extrait les informations utilisées en fonction du type de message, puis renvoie la réponse sous forme de structure avec les informations rentrées
+	
 	printf("Les éléments reçus sont : \n");
 	memcpy(&(train_message->message_type), message_recu, sizeof(int));
         printf("message_type : %d\n",train_message->message_type);
@@ -66,7 +67,7 @@ void lect_req_train(char* message_recu,TrainMessage_reception* train_message){
     	memcpy(&(train_message->id_service_1), message_recu + sizeof(int) * 2 + sizeof(float)*2, sizeof(int));
     	memcpy(&(train_message->id_service_2), message_recu + sizeof(int) * 3 + sizeof(float)*2, sizeof(int));
     	memcpy(&(train_message->id_service_3), message_recu + sizeof(int) * 4 + sizeof(float)*2, sizeof(int));
-        
+        train_message->sockfd = sock_fd;
         printf("service_type : %d\n",train_message->message_type);
         printf("id_train : %d\n",train_message->id_train);
         printf("position : %f\n",train_message->position);
@@ -74,7 +75,7 @@ void lect_req_train(char* message_recu,TrainMessage_reception* train_message){
         printf("id_service_1 : %d\n",train_message->id_service_1);
         printf("id_service_2 : %d\n",train_message->id_service_2);
         printf("id_service_3 : %d\n",train_message->id_service_3);
-	
+	printf("sock_fd : %d\n",train_message->sockfd);
 		}
 		
 		
@@ -185,7 +186,7 @@ int * ressource_2_list_services(int id_ressource){
 
 
 
-char* creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd){
+void creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd){
 	printf("[G2R]Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
 	// Allouer de la mémoire pour la trame
 	G2RMessage_envoi g2r_message_envoi;
@@ -206,32 +207,57 @@ char* creation_message_vers_train(int message_type, int id_train, float dist, fl
     	memcpy(frame + sizeof(int) * 3, &(g2r_message_envoi.speed), sizeof(float));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float), &(g2r_message_envoi.dist), sizeof(float));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(g2r_message_envoi.services_ok), num_services_ok*sizeof(int));
-	//write(sock_fd, frame, frame_length);
-    	return frame;
+	write(sock_fd, frame, frame_length);
+	free(frame);
+    	
 }
  
 
 // Fonction pour traiter un message
 void handle_message_type(void* args) {
-    // Traiter le message
+    // Traiter le message recu
     thread_argument *t_args = (thread_argument*)args;
     int sockfd = t_args->sockfd;
     int message_type = t_args->message_type;
+    int train_id = t_args->id_train ;
+    float speed = t_args->speed ;
+    float pos = t_args->position ;
+    int id_service_1 = t_args->id_service_1;
+    int id_service_2 = t_args->id_service_2;
+    int id_service_3 = t_args->id_service_3;
     printf("[G2R] Gestion d'un message de type %d\n",message_type);
     
-    /*write(sockfd, message, strlen(message));
-    close(sockfd);
-    pthread_exit(NULL);*/
-    // Envoyer une réponse "message bien reçu"
-    return NULL;
+    switch (message_type){
+    	case 1:
+    		check_position(message_type,train_id,speed,pos,id_service_1, id_service_2,id_service_3,sockfd);
+    		break;
+    	case 2:
+    		printf("commande_vitesse_autor();");
+    		break;
+    	case 3:
+    		printf("traitement 3");
+    		break;
+    	case 4:
+    		printf("traitement 4");
+    		break;
+    	case 5:
+    		printf("traitement 5");
+    		break;
+    		
+    	}
 }
 
-// Fonction pour traiter un message de type 2
-void handle_message_type_2(char* message) {
-    // Traiter le message de type 2
-    // Envoyer une réponse "message bien reçu"
-    return NULL;
-}
+void check_position(int message_type, int train_id, float pos, float speed, int id_service_1, int id_service_2, int id_service_3, int sockfd){
+	//calcul de la vitesse autorisée
+	printf("vitesse recu : %f\n",speed);
+	float vitesse = speed;
+	float vitesse_autor = vitesse/2;
+	printf("La vitesse autorisee est : %f\n", vitesse_autor);
+	int services[2] = {0,1};
+	creation_message_vers_train(12, train_id, pos, vitesse_autor,2.0, services,0, 3,sockfd);
+	}
+
+
 
 // Thread pour gérer un train
 
@@ -243,13 +269,10 @@ void handle_message_type_2(char* message) {
 
 void lancement_thread(TrainMessage_reception* train_message, int sock){
 	printf("Lancement du thread de gestion de message");
-	thread_argument* t_args;
-	int message_type = train_message->message_type;
-	t_args->message_type = message_type;
-	t_args->sockfd = sock;
+	
 	pthread_t thread_id;
 	printf("Lancement du thread de gestion de message\n");
-	CHECK_T( pthread_create (&thread_id, NULL , (pf_t)handle_message_type , (void *)t_args), " pthread_create ()");
+	CHECK_T( pthread_create (&thread_id, NULL , (pf_t)handle_message_type , (void *)train_message), " pthread_create ()");
 	CHECK_T ( pthread_join (thread_id, (void **) &status )," pthread_join ()") ; 
 	}
 
