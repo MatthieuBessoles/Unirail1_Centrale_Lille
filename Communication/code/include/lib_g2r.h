@@ -41,7 +41,7 @@ typedef struct {
     int id_service_3;
     int sockfd;
     int id_ressource;
-} thread_argument;
+} thread_argument_g2r;
 
 /* ------------------------------------------------------------------------ */
 		/* D É F I N I T I O N S  D E  T Y P E S */

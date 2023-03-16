@@ -56,6 +56,13 @@ int main() {
 			//int id_zone_suivi = 2;
 			int id_ressource = 2;
 			char message_recu_train[MAX_MESSAGE_LENGTH];
+			thread_argument_train t_args;
+    			t_args.sockfd = sd_g2r;
+    			
+    			t_args.trajet = liste_parcourt;
+    			t_args.id_train = id_train;
+    			printf("id train dans les args : %d\n",t_args.id_train);
+			lancement_thread_ppx(&t_args);
 			
 			G2RMessage_reception train_message;
 			creation_message_vers_g2r (message_type, id_train,pos,speed,service_1, service_2,service_3,sd_g2r,id_ressource);

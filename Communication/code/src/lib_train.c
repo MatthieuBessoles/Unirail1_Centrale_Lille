@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 //à changer avec le chemin de la librairie
 //#include "/home/boyer/Bureau/Cesar/julius/include/check.h"
 //pour l'utilisation de CHECK_IF
@@ -29,7 +30,7 @@
 #define SERVER_PORT 8080  // Port du serveur
  //stop//
  
- 
+double * status;
 
 int convert_id_to_dico(int id, int type){
 	int dico;
@@ -172,4 +173,86 @@ void lect_req_g2r(char* message_recu, G2RMessage_reception* g2r_message, int soc
              
 	
 }
+
+/* ------------------------------------------------------------------------ */
+/*		C R E A T I O N  D E S  D E U X  T H R E A D S 
+		           P R I N C I P A U X
+/* ------------------------------------------------------------------------ */
+
+void lancement_thread_ppx(thread_argument_train* args){
+	printf("Lancement du thread d'envoi de position\n");
+	pthread_t thread_pos;//calcul et envoi de position
+	printf("Lancement du thread de demande d'autorisation de mouvement\n");
+	pthread_t thread_autor;//demande d'autorisation de mouvements
+	CHECK_T( pthread_create (&thread_pos, NULL , (pf_t)gestion_position , args), " pthread_create ()");
+	CHECK_T( pthread_create (&thread_autor, NULL , (pf_t)gestion_demande , args), " pthread_create ()");
+	CHECK_T ( pthread_join (thread_pos, (void **) &status )," pthread_join ()") ; 
+	CHECK_T ( pthread_join (thread_autor, (void **) &status )," pthread_join ()") ; 
+	}
+	
+void gestion_position(void* args){
+	int sockfd = (int) args; // conversion explicite de void* à int
+  // utilisation de sockfd ici
+  	// Initialisez le timer
+    	init_timer();
+	printf("[thread position] OK\n");
+}
+
+
+void gestion_demande(void* args){
+  	//1. Première demande: les trois premiers services de mon trajet
+  	thread_argument_train *t_args = (thread_argument_train*)args;
+    	int sockfd = t_args->sockfd;
+    	int *trajet = t_args->trajet;
+    	int train_id = t_args->id_train ;
+    	printf("gestion demande train %d\n",train_id);
+    	int id_service_1 = trajet[0];
+    	int id_service_2 = trajet[1];
+    	int id_service_3 = trajet[2];
+    	creation_message_vers_g2r(2, train_id, 0.2, 0.2,id_service_1, id_service_2,id_service_3,sockfd, 0);
+    	printf("Envoi de la 1ere demande d'autorisation de mvt OK\n");
+    	
+    	
+  	//2. attente de la bonne réception
+  	G2RMessage_reception train_message;
+  	char message_recu_train[MAX_MESSAGE_LENGTH];
+	int n = read(sockfd,message_recu_train, MAX_MESSAGE_LENGTH);
+	lect_req_g2r(message_recu_train, &train_message,sockfd);
+
+  	//3. temps prochaine demande
+  	
+	printf("[thread demande] OK\n");
+}
+
+
+/* ------------------------------------------------------------------------ */
+/*		G E S T I O N    D U    T E M P S
+/* ------------------------------------------------------------------------ */
+// Fonction appelée lorsque le timer expire
+void send_position(int signum) {
+    // Code à exécuter lorsque le timer expire, dans ce cas l'envoi de la position
+    printf("Envoi de la position actuelle...\n");
+}
+
+// Fonction pour initialiser le timer
+void init_timer() {
+    struct sigaction sa;
+    struct itimerval timer;
+
+    // Spécifiez l'action à prendre lorsque le timer expire
+    sa.sa_handler = &send_position;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGALRM, &sa, NULL);
+
+    // Configurez le timer pour expirer toutes les 0.5 secondes
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 500000;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 500000;
+
+    // Démarrez le timer
+    setitimer(ITIMER_REAL, &timer, NULL);
+}
+
 

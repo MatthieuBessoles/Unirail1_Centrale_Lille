@@ -224,7 +224,7 @@ void creation_message_vers_train(int message_type, int id_train, float dist, flo
 // Fonction pour traiter un message
 void handle_message_type(void* args) {
     // Traiter le message recu
-    thread_argument *t_args = (thread_argument*)args;
+    thread_argument_g2r *t_args = (thread_argument_g2r*)args;
     int sockfd = t_args->sockfd;
     int message_type = t_args->message_type;
     int train_id = t_args->id_train ;
@@ -439,7 +439,6 @@ void autorisation(int message_type, int train_id, float pos, float speed, int id
 /* ------------------------------------------------------------------------ */
 
 void lancement_thread(TrainMessage_reception* train_message, int sock){
-	printf("Lancement du thread de gestion de message");
 	
 	pthread_t thread_id;
 	printf("Lancement du thread de gestion de message\n");
