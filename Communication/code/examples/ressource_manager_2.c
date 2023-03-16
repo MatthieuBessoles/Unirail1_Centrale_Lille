@@ -33,7 +33,6 @@
 
 
 
-#define NUM_RESSOURCES 10
 #define LOCALIP "127.0.0.1" //IP du PC gestionnaire de ressources
 #define LOCALPORT 8890 //Port du processus gestionnaire de ressource
 #define LOCALPORT_T3 8888 //Port du processus gestionnaire de ressource
@@ -45,14 +44,8 @@
 #define MAX_MESSAGE_LENGTH 500
 
 
-/* ------------------------------------------------------------------------ */
-/*		V A R I A  B L E S     G L O B A L E S						*/
-/* ------------------------------------------------------------------------ */
-
-
 // Déclaration des sémaphores pour les ressources
 sem_t ressource_semaphores[NUM_RESSOURCES];
-int message_size = 3; //Il y a 3 octets dans les messages du train vers le G2R
 
 /* ------------------------------------------------------------------------ */
 /*		P R O T O T Y P E S    D E    F O N C T I O N S				*/

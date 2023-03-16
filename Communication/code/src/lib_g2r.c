@@ -27,7 +27,9 @@
 /* ------------------------------------------------------------------------ */
 double * status;
 int NB_MAX_SERVICES = 12;
-int NUM_RESSOURCES = 9;
+
+extern sem_t ressource_semaphores[NUM_RESSOURCES];
+int message_size = 3; //Il y a 3 octets dans les messages du train vers le G2R
 
 int R_1 [] = {71,91,70,90,78,108,76,106,72,102,25,26}; // ensemble des id des services qui appartiennent à la ressource 1
 int length_1 = sizeof(R_1) / sizeof(R_1[0]);
@@ -80,7 +82,7 @@ void lect_req_train(char* message_recu, TrainMessage_reception* train_message,in
 		
 		
 int service_to_ressource(int id_service){
-	int id_ressource;
+	int id_ressource = 0;
 	for (int i=0; i<length_1;i++){
 		if (R_1[i] == id_service) {
             		id_ressource = 1;
@@ -135,7 +137,10 @@ int service_to_ressource(int id_service){
            		break;
            		}
            	}
-	
+        
+	if(id_ressource == 0){
+		printf("Le service demandé n'appartient pas à une ressource critique \n");
+		}
 	return id_ressource;
 	}
 
@@ -186,11 +191,11 @@ int * ressource_2_list_services(int id_ressource){
 
 
 
-void creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd){
+void creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd,int id_ressource){
 	printf("[G2R]Création d'un message de type %d par le G2R vers le train d'id %d \n", message_type, id_train);
 	// Allouer de la mémoire pour la trame
 	G2RMessage_envoi g2r_message_envoi;
-    	int frame_length = sizeof(int) * (3+num_services_ok) + sizeof(float) * 2;
+    	int frame_length = sizeof(int) * (4+num_services_ok) + sizeof(float) * 2;
     	char* frame = (char*) malloc(frame_length);
 	
 	
@@ -199,6 +204,7 @@ void creation_message_vers_train(int message_type, int id_train, float dist, flo
     	g2r_message_envoi.num_services = num_services_ok;
     	g2r_message_envoi.speed = speed;
     	g2r_message_envoi.dist =dist;
+    	g2r_message_envoi.id_ressource =id_ressource;
     	g2r_message_envoi.services_ok = services;
     	// Copier les données de train_message dans la trame
     	memcpy(frame, &(g2r_message_envoi.message_type), sizeof(int));
@@ -206,7 +212,9 @@ void creation_message_vers_train(int message_type, int id_train, float dist, flo
     	memcpy(frame + sizeof(int) * 2, &(g2r_message_envoi.num_services), sizeof(int));
     	memcpy(frame + sizeof(int) * 3, &(g2r_message_envoi.speed), sizeof(float));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float), &(g2r_message_envoi.dist), sizeof(float));
-    	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(g2r_message_envoi.services_ok), num_services_ok*sizeof(int));
+    	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(g2r_message_envoi.id_ressource), sizeof(int));
+    	
+    	memcpy(frame + sizeof(int) * 4 + sizeof(float)*2, &(g2r_message_envoi.services_ok), num_services_ok*sizeof(int));
 	write(sock_fd, frame, frame_length);
 	free(frame);
     	
@@ -222,6 +230,7 @@ void handle_message_type(void* args) {
     int train_id = t_args->id_train ;
     float speed = t_args->speed ;
     float pos = t_args->position ;
+    int id_ressource = t_args->id_ressource;
     int id_service_1 = t_args->id_service_1;
     int id_service_2 = t_args->id_service_2;
     int id_service_3 = t_args->id_service_3;
@@ -232,7 +241,9 @@ void handle_message_type(void* args) {
     		check_position(message_type,train_id,speed,pos,id_service_1, id_service_2,id_service_3,sockfd);
     		break;
     	case 2:
-    		printf("commande_vitesse_autor();");
+    		
+    		printf("Gestion de la Demande d'autorisation de mouvement ();");
+    		autorisation(message_type,train_id,speed,pos,id_service_1, id_service_2,id_service_3,sockfd,id_ressource);
     		break;
     	case 3:
     		printf("traitement 3");
@@ -247,6 +258,7 @@ void handle_message_type(void* args) {
     	}
 }
 
+
 void check_position(int message_type, int train_id, float pos, float speed, int id_service_1, int id_service_2, int id_service_3, int sockfd){
 	//calcul de la vitesse autorisée
 	printf("vitesse recu : %f\n",speed);
@@ -254,10 +266,169 @@ void check_position(int message_type, int train_id, float pos, float speed, int 
 	float vitesse_autor = vitesse/2;
 	printf("La vitesse autorisee est : %f\n", vitesse_autor);
 	int services[2] = {0,1};
-	creation_message_vers_train(12, train_id, pos, vitesse_autor,2.0, services,0, 3,sockfd);
+	creation_message_vers_train(12, train_id, pos, vitesse_autor,2.0, services,0, 3,sockfd,0);
 	}
+	
+float vitesse_to_service(int id_service){
+	printf("on associe une vitesse au service %d\n",id_service);
+	float vitesse;
+	if (id_service== 1 || id_service == 2 || id_service ==6 || id_service == 8 || id_service == 10 || id_service ==18 || id_service == 14 || id_service == 17){
+		vitesse = VITESSE_MAX;
+		}
+	else if (id_service <= 30){vitesse = VITESSE_VIRAGE;}
+	else {
+		vitesse = VITESSE_AIGUILLAGE;
+		}
+	printf("La vitesse %f a été associée au service %d\n",vitesse,id_service);
+	return vitesse;
+	}
+	
 
-
+void autorisation(int message_type, int train_id, float pos, float speed, int id_service_1, int id_service_2, int id_service_3, int sockfd, int id_ressource){
+	//détermination de l'autorisation de mouvement
+	
+	int services_demandes[3] = {id_service_1,id_service_2, id_service_3};
+	int is_ressource = 0;
+	int i = 0;
+	int *service_autor= NULL; //pointeur vers la liste de services autor dont on ne connait pas la taille initialement
+	int service_demande;
+	while (is_ressource ==0 && i<3){
+		i = i+1;
+		service_demande = services_demandes[i-1];
+		service_autor = realloc(service_autor, i * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+		service_autor[i-1] = service_demande;
+		is_ressource = service_to_ressource(service_demande);
+		}
+	switch (is_ressource){
+		case 0:
+			//dans le cas où ce n'est pas une ressource, on autorise tous les services, avec les vitesses correspondantes au service
+			float vitesse_autor = 3.0;
+			creation_message_vers_train(11, train_id,pos,vitesse_autor,3,service_autor,0,3,sockfd,is_ressource);//3 services autorisés
+			break;
+		case 1:
+			
+			//le service demandé appartient à la ressource critique 1		
+			//1. Réservation de la ressource sous forme de sémaphore
+			
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_1;j++){
+				service_demande = R_1[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+		case 2:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_2;j++){
+				service_demande = R_2[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+		case 3:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_3;j++){
+				service_demande = R_3[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+		case 4:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_4;j++){
+				service_demande = R_4[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+		case 5:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_5;j++){
+				service_demande = R_5[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+		case 6:
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			//le service demandé appartient à la ressource critique 1
+			for (int j = 0; j <length_6;j++){
+				service_demande = R_6[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+			//1. On alloue les services de la ressource critique
+			
+		case 7:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_7;j++){
+				service_demande = R_7[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+			//1. On alloue les services de la ressource critique
+					
+		case 8:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_8;j++){
+				service_demande = R_8[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+			//1. On alloue les services de la ressource critique
+					
+		case 9:
+			
+			//le service demandé appartient à la ressource critique 1
+			printf("Tentative d'accès à la ressource %d\n",is_ressource);
+    			sem_wait(&ressource_semaphores [is_ressource-1]); //on attend que la ressource se libère
+    			printf("Allocation de la ressource  %d au train %d\n",is_ressource,train_id);
+			for (int j = 0; j <length_9;j++){
+				service_demande = R_9[j];
+				service_autor = realloc(service_autor, j * sizeof(int)); // réallocation dynamique de mémoire pour la liste
+				service_autor[i+j] = service_demande;
+				}
+			break;
+			//1. On alloue les services de la ressource critique
+					
+		default:
+			printf("erreur service demande");
+			break;
+		}
+	int num_services = sizeof(service_autor)/sizeof(int);
+	creation_message_vers_train(11, train_id,  3.0,2.0,num_services, service_autor,1,1,sockfd,is_ressource);
+	}		
 
 // Thread pour gérer un train
 

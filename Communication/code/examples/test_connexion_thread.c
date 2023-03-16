@@ -45,7 +45,7 @@ int main() {
 			printf("[TRAIN 1]mon service demandé est : %d\n",mon_service);
 			
 			printf("Hello world\n");
-			int message_type = 1;
+			int message_type = 2;
 			int id_train = 1;
 			float pos = 3.5;
 			float speed = 30.3;
@@ -54,11 +54,11 @@ int main() {
 			int service_2 = 14;
 			int service_3 = 16;
 			//int id_zone_suivi = 2;
-			//int id_serv_ok = 3;
+			int id_ressource = 2;
 			char message_recu_train[MAX_MESSAGE_LENGTH];
 			
 			G2RMessage_reception train_message;
-			creation_message_vers_g2r (message_type, id_train,pos,speed,service_1, service_2,service_3,sd_g2r);
+			creation_message_vers_g2r (message_type, id_train,pos,speed,service_1, service_2,service_3,sd_g2r,id_ressource);
 			int n = read(sd_g2r,message_recu_train, MAX_MESSAGE_LENGTH);
 			lect_req_g2r(message_recu_train, &train_message,sd_g2r);
 

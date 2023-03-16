@@ -76,11 +76,11 @@ int mot_ecriture(unsigned char id_train){
 
 
 
-void creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd){
+void creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd, int id_ressource){
 	printf("Création d'un message de type %d par le train d'id %d \n", message_type, id_train);
 	// Allouer de la mémoire pour la trame
-	TrainMessage_reception train_message_envoi;
-    	int frame_length = sizeof(int) * 5 + sizeof(float) * 2;
+	TrainMessage_envoi train_message_envoi;
+    	int frame_length = sizeof(int) * 6 + sizeof(float) * 2;
     	char* frame = (char*) malloc(frame_length);
 	
 	
@@ -91,6 +91,7 @@ void creation_message_vers_g2r(int message_type, int id_train, float pos, float 
     	train_message_envoi.id_service_1 = id_serv_1;
     	train_message_envoi.id_service_2 = id_serv_2;
     	train_message_envoi.id_service_3 = id_serv_3;
+    	train_message_envoi.id_ressource = id_ressource;
     	// Copier les données de train_message dans la trame
     	memcpy(frame, &(train_message_envoi.message_type), sizeof(int));
     	memcpy(frame + sizeof(int), &(train_message_envoi.id_train), sizeof(int));
@@ -99,6 +100,7 @@ void creation_message_vers_g2r(int message_type, int id_train, float pos, float 
     	memcpy(frame + sizeof(int) * 2 + sizeof(float)*2, &(train_message_envoi.id_service_1), sizeof(int));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(train_message_envoi.id_service_2), sizeof(int));
     	memcpy(frame + sizeof(int) * 4 + sizeof(float)*2, &(train_message_envoi.id_service_3), sizeof(int));
+    	memcpy(frame + sizeof(int) * 5 + sizeof(float)*2, &(train_message_envoi.id_ressource), sizeof(int));
 	write(sock_fd, frame, frame_length);
     	free(frame);
 }
