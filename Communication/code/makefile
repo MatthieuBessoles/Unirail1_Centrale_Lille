@@ -1,7 +1,9 @@
-all: libs_g2r libs_train g2r train
+all: libs_g2r libs_train test g2r
 g2r: bin/ressource_manager_stat bin/ressource_manager_dyn
-train: bin/train_1_stat bin/train_1_dyn 
-#bin/train_2_tat bin/train_2_dyn bin/train_3_tat bin/train_3_dyn bin/train_4_tat bin/train_4_dyn
+train: bin/train_1_stat bin/train_1_dyn bin/train_3_stat bin/train_3_dyn bin/train_2_stat bin/train_2_dyn
+test:bin/test_train_v1_stat
+#bin/test_connexion_thread_stat 
+#bin/test_mess_indu_stat bin/test_mess_indu_train_stat
 libs_g2r :lib/lib_g2r.a lib/lib_g2r.so
 libs_train :lib/lib_train.a lib/lib_train.so
 
@@ -61,8 +63,24 @@ lib/lib_train.so : build/lib_train_fPic.o
 
 # demander une édition de liens statique avec la lib lib_g2r : -l<NOM>
 bin/ressource_manager_stat: examples/ressource_manager_2.c
-	@echo "Edition de lien statique pour $< avec la librairie lib_g2r"
-	$A gcc $(CPFLAGS) -static examples/ressource_manager_2.c $(LDFLAGS) -l:lib_g2r.a -o bin/ressource_manager_stat
+	@echo "Edition de lien statique pour $< avec la librairie lib_g2r et la lib_train"
+	$A gcc $(CPFLAGS) -static examples/ressource_manager_2.c $(LDFLAGS) -l:lib_g2r.a -l:lib_train.a -o bin/ressource_manager_stat
+
+bin/test_mess_indu_stat: examples/test_mess_indu.c
+	@echo "Edition de lien statique pour $< avec la librairie lib_g2r et la lib_train"
+	$A gcc $(CPFLAGS) -static examples/test_mess_indu.c $(LDFLAGS) -l:lib_g2r.a -l:lib_train.a -o bin/test_mess_indu_stat
+
+bin/test_mess_indu_train_stat: examples/test_mess_indu_train.c
+	@echo "Edition de lien statique pour $< avec la librairie lib_g2r et la lib_train"
+	$A gcc $(CPFLAGS) -static examples/test_mess_indu_train.c $(LDFLAGS) -l:lib_train.a -l:lib_g2r.a -o bin/test_mess_indu_train_stat
+
+bin/test_connexion_thread_stat: examples/test_connexion_thread.c
+	@echo "Edition de lien statique pour $< avec la librairie lib_g2r et la lib_train"
+	$A gcc $(CPFLAGS) -static examples/test_connexion_thread.c $(LDFLAGS) -l:lib_train.a -l:lib_g2r.a -o bin/test_connexion_thread_stat
+
+bin/test_train_v1_stat: examples/test_train_v1.c
+	@echo "Edition de lien statique pour $< avec la librairie lib_g2r et la lib_train"
+	$A gcc $(CPFLAGS) -static examples/test_train_v1.c $(LDFLAGS) -l:lib_train.a -l:lib_g2r.a -o bin/test_train_v1_stat
 
 # demander une édition de liens dynamique avec la lib lib_g2r : -l<NOM>
 bin/ressource_manager_dyn: examples/ressource_manager_2.c
@@ -82,10 +100,6 @@ bin/train_3_stat: examples/train_3.c
 	@echo "Edition de lien statique pour $< avec la librairie lib_train"
 	$A gcc $(CPFLAGS) -static examples/train_3.c $(LDFLAGS) -l:lib_train.a -o bin/train_3_stat
 
-bin/train_4_stat: examples/train_4.c
-	@echo "Edition de lien statique pour $< avec la librairie lib_train"
-	$A gcc $(CPFLAGS) -static examples/train_4.c $(LDFLAGS) -l:lib_train.a -o bin/train_4_stat
-
 
 # demander une édition de liens dynamique avec la lib lib_train : -l<NOM>
 
@@ -101,10 +115,6 @@ bin/train_3_dyn: examples/train_3.c
 	@echo "Edition de lien dynamique pour $< avec la librairie lib_train"
 	$A gcc $(CPFLAGS) $(LDFLAGS) examples/train_3.c -o bin/train_3_dyn -l:lib_train.so
 
-bin/train_4_dyn: examples/train_4.c
-	@echo "Edition de lien dynamique pour $< avec la librairie lib_train"
-	$A gcc $(CPFLAGS) $(LDFLAGS) examples/train_4.c -o bin/train_4_dyn -l:lib_train.so
-	
 	
 
 clean: 

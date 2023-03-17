@@ -25,52 +25,27 @@
 /* ------------------------------------------------------------------------ */
 /*			E N T Ê T E S    P E R S O N N E L L E S						*/
 /* ------------------------------------------------------------------------ */
-#include "/home/boyer/Bureau/reseaux/TP2/code/include/lib_g2r.h"
-/* ------------------------------------------------------------------------ */
-		/* D É F I N I T I O N S  D E  T Y P E S */
-/* ------------------------------------------------------------------------ */
-typedef void * (* pf_t)(void *) ;
+#include "../include/lib_g2r.h"
+#include "../include/lib_train.h"
 /* ------------------------------------------------------------------------ */
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
 /* ------------------------------------------------------------------------ */
 
-#define NUM_RESSOURCES 10
+
+
 #define LOCALIP "127.0.0.1" //IP du PC gestionnaire de ressources
-#define LOCALPORT 8888 //Port du processus gestionnaire de ressource
-#define REMOTEPORT_T1_T3 3000 //T1/2 sont gérés sur le même PC
-#define REMOTEPORT_T2_T4 2000 //T3/4 sont gérés sur le même PC
-#define REMOTEIP_T1_T2 "127.0.0.1" //A MODIFIER
-#define REMOTEIP_T3_T4 "127.0.0.1" //A MODIFIER
+#define LOCALPORT 8890 //Port du processus gestionnaire de ressource
+#define LOCALPORT_T3 8888 //Port du processus gestionnaire de ressource
+#define REMOTEPORT_T1 3000 
+#define REMOTEIP_T1 "127.0.0.1" //A MODIFIER
 #define allocation_train 2 //bonne allocation de la ressource
 #define acknowledge_fin_train 4 //acknowledge de fin d'utilisation de la ressource 
-#define NB_TRAINS 4
-/* ------------------------------------------------------------------------ */
-/*			M A C R O - F O N C T I O N S						*/
-/* ------------------------------------------------------------------------ */
-#define CHECKERROR(var,val,msg)  if (var ==val) {perror (msg);}
-
-# define CHECK_T(status , msg)						\
-	if (0 != ( status )) {						\
-		fprintf (stderr , " pthread erreur : %s\n", msg) ; 	\
-		exit ( EXIT_FAILURE ) ;					\
-	}
-	
-# define CHECK(status , msg)						\
-	if (-1 == ( status )) {						\
-	perror (msg) ;							\
-	exit( EXIT_FAILURE ) ;						\
-	}
-
-
-
-/* ------------------------------------------------------------------------ */
-/*		V A R I A  B L E S     G L O B A L E S						*/
-/* ------------------------------------------------------------------------ */
+#define NB_TRAINS 3
+#define MAX_MESSAGE_LENGTH 500
 
 
 // Déclaration des sémaphores pour les ressources
 sem_t ressource_semaphores[NUM_RESSOURCES];
-int message_size = 3; //Il y a 3 octets dans les messages du train vers le G2R
 
 /* ------------------------------------------------------------------------ */
 /*		P R O T O T Y P E S    D E    F O N C T I O N S				*/
@@ -82,16 +57,12 @@ int main(int argc, char *argv[]) {
 	pthread_t client_trains[NB_TRAINS];
 	double * status;
 		
-    	//déclaration des sockets pour les 4 trains
+    	//déclaration des sockets pour les 3 trains
     
-    	int sockfd, newsock_1, newsock_2, newsock_3,newsock_4;
+    	int server_fd, new_sockfd_1,new_sockfd_2,new_sockfd_3;
     
     	socklen_t clilen;
     	struct sockaddr_in serv_addr;
-    	struct sockaddr_in cli_addr_T1;
-    	struct sockaddr_in cli_addr_T2;
-    	struct sockaddr_in cli_addr_T3;
-    	struct sockaddr_in cli_addr_T4;
     	int n;
 
     	// Initialisation des sémaphores pour chaque ressource
@@ -100,49 +71,79 @@ int main(int argc, char *argv[]) {
     	}	
 
     	// Création du socket
-    	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    	if (sockfd < 0) {
+    	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    	if (server_fd < 0) {
         	perror("Erreur lors de la création du socket");
         	exit(1);
     	}
+    	
 
     	// Initialisation des valeurs de la structure sockaddr_in
     	bzero((char *) &serv_addr, sizeof(serv_addr));
     	serv_addr.sin_family = AF_INET;
     	serv_addr.sin_addr.s_addr = INADDR_ANY;
     	serv_addr.sin_port = htons(LOCALPORT);
+    	
 
-    	// Binding
-    	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    	// Binding : attachement du socket au port
+    	if (bind(server_fd , (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         	perror("Erreur lors du binding");
         	exit(1);
     	}
+    	
 
-    	// Écoute
-    	listen(sockfd, NB_TRAINS+1);
-    	clilen = sizeof(cli_addr_T1); //même taille peut importe le train
-	newsock_2 = accept(sockfd, (struct sockaddr *)&cli_addr_T2, &clilen);
-	printf("jaccepte la connexion au train \n");
-    	if (newsock_2 < 0) {
+    	// Écoute pour les 3 trains
+    	listen(server_fd, 3);
+    	clilen = sizeof(serv_addr); //même taille peut importe le train
+    	
+    	new_sockfd_1 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train 1 \n");
+    	if (new_sockfd_1 < 0) {
         	perror("Erreur lors de l'acceptation de la connexion entrante");
     		}
     		
-    	int *client_fd_ptr = malloc(sizeof(int));
-        *client_fd_ptr = newsock_2;
-        printf("je rentre de le while \n");
-    	while (1) {
+    	int *client_fd_ptr_1 = malloc(sizeof(int));
+        *client_fd_ptr_1 = new_sockfd_1;
+        
+        /*new_sockfd_2 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train \n");
+    	if (new_sockfd_2 < 0) {
+        	perror("Erreur lors de l'acceptation de la connexion entrante");
+    		}
     		
-    		/* Création des 4 threads pour les trains*/
-		CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr), " pthread_create ()"); //train 2
-		CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
+    	int *client_fd_ptr_2 = malloc(sizeof(int));
+        *client_fd_ptr_2 = new_sockfd_2;
+    	
+        
+        new_sockfd_3 = accept(server_fd, (struct sockaddr *)&serv_addr, &clilen);
+	printf("jaccepte la connexion au train 3 \n");
+    	if (new_sockfd_3 < 0) {
+        	perror("Erreur lors de l'acceptation de la connexion entrante");
+    		}
+    		
+    	int *client_fd_ptr_3 = malloc(sizeof(int));
+        *client_fd_ptr_3 = new_sockfd_3;*/
+        
+    	/* Création des 3 threads pour les trains*/
+	CHECK_T( pthread_create (&client_trains[0], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_1), " pthread_create ()"); //train 1
+  
+	/*CHECK_T( pthread_create (&client_trains[1], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_2), " pthread_create ()"); //train 2
+	CHECK_T( pthread_create (&client_trains[2], NULL , (pf_t)gestion_train , (void *)client_fd_ptr_3), " pthread_create ()"); //train 3*/
+		
+	CHECK_T ( pthread_join (client_trains[0], (void **) &status )," pthread_join ()") ;
+	/*CHECK_T ( pthread_join (client_trains[1], (void **) &status )," pthread_join ()") ;
+	CHECK_T ( pthread_join (client_trains[2], (void **) &status )," pthread_join ()") ;*/
 			
-		sleep(5);
+	sleep(5);
         // Déverrouille la ressource en relâchant le sémaphore
         //sem_post(&resource_semaphores[resource_index]);
-    }
-
-    	// Ferme la connexion
-    	close(newsock_2);
+    
+	printf("[G2R] Fermeture des connexions\n");
+    	// Ferme les connexions
+    	close(new_sockfd_1);
+    	/*close(new_sockfd_2);
+    	close(new_sockfd_3);*/
+    	close(server_fd);
 
 
 	// Ferme les sémaphores
@@ -160,65 +161,75 @@ return 0;
 
 void * gestion_train(void *client_sock_ptr){
 	//pointeur vers un entier représentant le descripteur de fichier de la socket cliente.
-	int client_sock = *((int *)client_sock_ptr);
-    	unsigned char message_train[message_size];
+	
+    	while(1){
+    		int client_sock = *((int *)client_sock_ptr);
+    		char message_recu[MAX_MESSAGE_LENGTH];
+    		// 1. Lecture de la trame du train
+		int n = read(client_sock,message_recu,MAX_MESSAGE_LENGTH);
+    		
+    		TrainMessage_reception message_train_recu;
+    		printf("[G2R]Message reçu : ");
+    		lect_req_train(message_recu, &message_train_recu, client_sock);
+    		// 2. Lancement du thread approprié
+    		lancement_thread(&message_train_recu, client_sock);
+    		return NULL;}
+    		}
+    		/*switch (message_type){
+    			case 1:
+    				id_service_demande = requete[2];
+    				printf("Il s'agit d'une demande d'accès au service %d jugé critique par le train %d\n",id_service_demande,train_demandeur_id);
+    				int my_ressource = service_to_ressource (id_service_demande);
+    				printf("ma ressource est : %i\n",my_ressource);
+    				my_services = ressource_2_list_services ( my_ressource);
+    	
+    				//printf("mes services sont : \n");
+				//2.1 Controle à effectuer
+    	
+    				free(requete);
+    				/*if (my_ressource != 1){
+    					printf("Pas le bon type de message ! \n");
+    					exit(EXIT_FAILURE);
+    					}
+    				//autres actions à mener
+    				//3. Tentative d'accès à la ressource
+    				printf("Tentative d'accès à la ressource %d\n",my_ressource);
+    				sem_wait(&ressource_semaphores [my_ressource-1]); //on attend que la ressource se libère
+    				printf("Allocation de la ressource  %d au train %d\n",my_ressource,2);
+        			//4. La ressource est disponible, envoi des trames au train
+        			unsigned char* message_vers_train= malloc(15 * sizeof(unsigned char) * 2);
+        			//unsigned char message_vers_train[50];
+        			creation_message_vers_train (message_vers_train,2,train_demandeur_id, my_services, id_service_demande,1, client_sock,my_ressource);
+        			printf("Message créé et envoyé !\n");
+        			free(message_vers_train);
+        			break;
+   			case 3: 
+   				printf("Confirmation de la libération d'une ressource par le train %d\n",train_demandeur_id);
+   				//1. identification de la ressource liberee
+   				int id_ressource_liberee = requete[2];
+    				printf("Il s'agit d'une attestation de réalisation des services appartenant à la ressource %d par le train %d\n", id_ressource_liberee, train_demandeur_id);
+				//2. Libération de la ressource
+				sem_post(&ressource_semaphores [id_ressource_liberee -1]);
+				printf("libération de la ressource %d ok\n", id_ressource_liberee);
+				//3. Creation et envoi du message de confirmation de libération de la ressource au train
+				int *my_service_fake[] = {0};
+				id_service_demande = 0;
+				printf("passage des param ok \n");
+				unsigned char rep_vers_train[20];//2 octets
+				creation_message_vers_train (rep_vers_train,4,train_demandeur_id, my_services, id_service_demande,1, client_sock,id_ressource_liberee);
+				printf("Envoi de l'ackowledge par le G2R vers le train %d ok\n", train_demandeur_id);
+				break;
+			default:
+				printf("Pas le bon type de message ! \n");
+    				// Demande non valide
+        			close(client_sock);
+    				// Fermeture de la connexion avec le client
+    				break;
+    			}
 
-    	// 1. Lecture de la demande du client
-    	int n = read(client_sock, message_train, sizeof(message_train));
-    	if (n < 0) {
-        	perror("Erreur lors de la lecture de la demande du client");
-        	close(client_sock);
-        	return NULL;
     	}
-    	
-    	printf("Message reçu : ");
-    	afficher_trame(message_train,message_size);
-    	// 2. Identification de la ressource demandée
-    	int *requete = lect_req(message_train, message_size);
-    	printf("recupération de la requête int ok\n");
-    	for (int i = 0; i<message_size;i++){
-    		printf("%d\n",requete[i]);
-    		}
-    	//2.2 Récupération de la ressource et des services associés
-    	int id_service_demande = requete[2];
-    	printf("id_service_demande : %d\n",id_service_demande);
-    	int my_ressource = service_to_ressource(id_service_demande);
-    	printf("ma ressource est : %i\n",my_ressource);
-    	int *my_services = ressource_2_list_services(my_ressource);
-    	
-    	//printf("mes services sont : \n");
-	//2.1 Controle à effectuer
-    	int message_type = requete[0];
-    	free(requete);
-    	if (message_type != 1){
-    		printf("Pas le bon type de message ! \n");
-    		// Demande non valide
-        	close(client_sock);
-        	return NULL;
-    		//exit(EXIT_FAILURE);
-    		}
-    	/*if (my_ressource != 1){
-    		printf("Pas le bon type de message ! \n");
-    		exit(EXIT_FAILURE);
-    		}*/
-    		//autres actions à mener
-    	//3. Traitement de la demande
-	//semaphore = &ressource_semaphores[my_ressource];
-    	//4. Tentative d'accès à la ressource
-    	printf("Tentative d'accès à la ressource %d\n",my_ressource);
-    	sem_wait(&ressource_semaphores[my_ressource-1]); //on attend que la ressource se libère
-    	printf("Allocation de la ressource  %d au train %d\n",my_ressource,2);
-        //5. La ressource est disponible, envoi des trames au train
-        unsigned char message_vers_train[50];
-        creation_message_vers_train(message_vers_train,2, 2, my_services,id_service_demande,1,client_sock);
-        printf("Message créé et envoyé !\n");
-   
-
-    	// Fermeture de la connexion avec le client
-    	close(client_sock);
-    	
-
     	return NULL;
+	
 }
-
+*/
 
