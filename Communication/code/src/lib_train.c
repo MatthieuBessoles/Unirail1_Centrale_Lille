@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <stdbool.h>
 //à changer avec le chemin de la librairie
 //#include "/home/boyer/Bureau/Cesar/julius/include/check.h"
 //pour l'utilisation de CHECK_IF
@@ -31,7 +32,11 @@
  //stop//
  
 double * status;
-
+extern int index_actuel;
+extern float position; 
+extern int liste_parcourt_1[50]; /*à remplir avec le parcourt */
+// mutex pour protéger l'accès à la variable position
+extern pthread_mutex_t mutex_position; 
 int convert_id_to_dico(int id, int type){
 	int dico;
 	switch (type){
@@ -162,17 +167,144 @@ void lect_req_g2r(char* message_recu, G2RMessage_reception* g2r_message, int soc
         memcpy(&(g2r_message->id_train), message_recu + sizeof(int), sizeof(int));
         printf("id_train : %d\n",g2r_message->id_train);
     	memcpy(&(g2r_message->num_services), message_recu + sizeof(int) * 2, sizeof(int));
-    	printf("id_train : %d\n",g2r_message->num_services);
+    	printf("num_services : %d\n",g2r_message->num_services);
     	memcpy(&(g2r_message->speed), message_recu + sizeof(int) * 3, sizeof(float));
     	printf("speed : %f\n",g2r_message->speed);
     	memcpy(&(g2r_message->dist), message_recu + sizeof(int) * 3 + sizeof(float), sizeof(float));
     	printf("dist : %f\n",g2r_message->dist);
+    	memcpy(&(g2r_message->id_ressource), message_recu + sizeof(int) * 3 + sizeof(float)*2, sizeof(int));
+    	printf("id_ressource : %d\n",g2r_message->id_ressource);
     	printf("ajout des services  en cours\n");
-    	memcpy(&((g2r_message->services_ok)), message_recu + sizeof(int) * (3) + sizeof(float)*2, sizeof(int)*g2r_message->num_services);
+    	g2r_message->services_ok = malloc(g2r_message->num_services * sizeof(int));
+    	printf("Service %d: %d\n", 0, g2r_message->services_ok[0]);
+    	for (int i = 0; i < g2r_message->num_services; i++) {
+    		printf("Service %d: %d\n", i, g2r_message->services_ok[i]);
+    		memcpy(&(g2r_message->services_ok[i]), message_recu + sizeof(int) * (4+i) + sizeof(float)*2, sizeof(int));
+        	
+        	}
+        	
     	printf("ajout des services  fait\n");
              
 	
 }
+
+/* ------------------------------------------------------------------------ */
+/*		P R O C H A I N     M O U V E M E N T
+/* ------------------------------------------------------------------------ */
+
+int vitesse_to_service(int id_service){
+	printf("on associe une vitesse au service %d\n",id_service);
+	int vitesse;
+	if (id_service== 1 || id_service == 2 || id_service ==6 || id_service == 8 || id_service == 10 || id_service ==18 || id_service == 14 || id_service == 17){
+		vitesse = VITESSE_MAX;
+		}
+	else if (id_service <= 30){vitesse = VITESSE_VIRAGE;}
+	else {
+		vitesse = VITESSE_AIGUILLAGE;
+		}
+	printf("La vitesse %d a été associée au service %d\n",vitesse,id_service);
+	return vitesse;
+	}
+
+bool contains(int arr[], int n, int x) {
+    for (int i = 0; i < n; i++) {
+        if (arr[i] == x) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int* prochain_mouvement(G2RMessage_reception* g2r_message){
+	//l'objectif est de déterminer le prochain mouvement réalisé par le train en fonction des allocations du G2R et de son parcours
+	printf("calcul du mouvement\n");
+	//1. On détermine l'autorisation de mouvement
+	int* mouvement = (int*)malloc(30);
+	int service_act;
+	int num_services = g2r_message->num_services;
+	printf("[prochain mvt] num services = %d\n",num_services);
+	int *services = g2r_message->services_ok;
+	//printf("[prochain mvt]services ok = %d\n", services[0]);
+	printf("[prochain mvt]services ok = %d\n", g2r_message->services_ok[0]);
+	printf("[prochain mvt]index actuel =%d\n",index_actuel);
+	int nb_mvts = 0; 
+	int j = 0;
+	int k=0 ;
+	int taille = sizeof(liste_parcourt_1)/sizeof(int);
+	int is_in_trajet = 1;
+	while(is_in_trajet == 1 && (k+index_actuel < taille)){
+        	if (contains(services,num_services,liste_parcourt_1 [k+index_actuel] )) {
+            		mouvement[j+1] = liste_parcourt_1 [k+index_actuel];
+			printf("[prochain mvt]mouvement %d =%d\n",j,mouvement[j+1]);
+			nb_mvts+= 1;
+			j+=1;
+			k+=1;}
+            	else {is_in_trajet = 0;}
+            				}
+	mouvement[0] = nb_mvts;
+	printf("[prochain mvt]nb mouvement = %d\n", nb_mvts);
+	//2. On associe les vitesses autorisées
+	int mouvement_size = sizeof(mouvement)/sizeof(int);
+	int vitesse_autor;
+	int mouv;
+	printf("[prochain mvt]size ok: %d\n", mouvement_size);
+	for (int i=0; i<mouvement_size;i++){
+		mouv=mouvement[i];
+		printf("[prochain mvt] mouv = %d\n", mouv);
+		vitesse_autor = vitesse_to_service(mouv);
+		printf("[prochain mvt]vitesse autor = %d\n",vitesse_autor);
+		printf("[prochain mvt]realloc size ok\n");
+		mouvement[i+mouvement_size] = vitesse_autor;
+		printf("[prochain mvt]vitesse1 ok\n");
+		}
+	printf("[prochain mvt]vitess add ok\n");
+	return(mouvement);
+	//renvoie une liste de services et leurs vitesses associées
+	}
+/* ------------------------------------------------------------------------ */
+/*		T H R E A D      A V A N C E
+/* ------------------------------------------------------------------------ */
+
+void avancer(G2RMessage_reception* g2r_message){
+	while (1){
+		int i = 0;
+		//1. calcule du prochain mouvement
+		int *mouvement = prochain_mouvement(g2r_message); 
+		int nb_mvts = mouvement[0];
+		printf("[AVANCER] nb_mvt = %d\n",nb_mvts);
+		int mouvement_size = 2*nb_mvts+1;
+		printf("Dans le thread avancer\n");
+		
+		int vitesse;
+		//2. Avancer en conséquence
+		while (i < nb_mvts) {
+		
+			pthread_mutex_lock(&mutex_position);
+        		// Calculer la distance parcourue
+        		vitesse = mouvement[index_actuel+(mouvement_size-1)/2];
+        		printf("[AVANCER] vitesse = %d\n",vitesse);
+        		//1. On reserve l'acces à la mutex position
+    		
+        		position += T_e*vitesse;
+        		//printf("distance_parcourue = %f\n",position);
+        		// Actualiser l'index si la distance parcourue dépasse 150 cm
+        		if (position >= LONGUEUR) {
+            			index_actuel++;
+            			position = 0.0;
+        		}
+        		i++;
+        		pthread_mutex_unlock(&mutex_position);
+        		// Attendre un temps pour simuler le déplacement du train
+        		sleep(1);
+        		
+    		}
+    		free(mouvement);
+    	}
+    
+    
+    }
+		
+	
 
 /* ------------------------------------------------------------------------ */
 /*		C R E A T I O N  D E S  D E U X  T H R E A D S 
@@ -218,8 +350,16 @@ void gestion_demande(void* args){
   	char message_recu_train[MAX_MESSAGE_LENGTH];
 	int n = read(sockfd,message_recu_train, MAX_MESSAGE_LENGTH);
 	lect_req_g2r(message_recu_train, &train_message,sockfd);
-
+	
+	//3. Création du thread avance
+	G2RMessage_reception *train_message_ptr = &train_message;
+	printf("Lancement du thread avancer\n");
+	pthread_t thread_avance;//calcul et envoi de position
+	CHECK_T( pthread_create (&thread_avance, NULL , (pf_t)avancer , (void *)train_message_ptr), " pthread_create ()");
+	CHECK_T ( pthread_join (thread_avance, (void **) &status )," pthread_join ()") ; 
   	//3. temps prochaine demande
+  	sleep(2);
+  	
   	
 	printf("[thread demande] OK\n");
 }
@@ -231,7 +371,13 @@ void gestion_demande(void* args){
 // Fonction appelée lorsque le timer expire
 void send_position(int signum) {
     // Code à exécuter lorsque le timer expire, dans ce cas l'envoi de la position
-    printf("Envoi de la position actuelle...\n");
+    	//1. On reserve l'acces à la mutex position
+    	pthread_mutex_lock(&mutex_position);
+    	//2. On envoie le message au g2r
+    	int message_type = 1;
+    	//creation_message_vers_g2r(message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd, int id_ressource);
+    	printf("Envoi de la position actuelle : %f\n",position);
+    	pthread_mutex_unlock(&mutex_position);
 }
 
 // Fonction pour initialiser le timer
@@ -253,6 +399,9 @@ void init_timer() {
 
     // Démarrez le timer
     setitimer(ITIMER_REAL, &timer, NULL);
+    while(1){
+    	sleep(1);
+    	}
 }
 
 

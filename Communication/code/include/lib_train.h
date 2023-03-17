@@ -11,7 +11,8 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
-
+#include <pthread.h>
+#include <stdbool.h>
 typedef struct {
     int message_type;
     int id_train;
@@ -46,6 +47,21 @@ typedef struct {
 /* ------------------------------------------------------------------------ */
 typedef void * (* pf_t)(void *) ;
 /* ------------------------------------------------------------------------ */
+/*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
+/* ------------------------------------------------------------------------ */
+
+#define VITESSE_URGENCE 0
+#define VITESSE_APPROCHE 10
+#define VITESSE_AIGUILLAGE 20
+#define VITESSE_VIRAGE 30
+#define VITESSE_MAX 45
+#define LONGUEUR 15 //longueur en cm d'un service (pour le moment)
+#define T_e 0.01 //periode d'échantillonnage en s
+
+
+
+
+/* ------------------------------------------------------------------------ */
 /*			M A C R O - F O N C T I O N S						*/
 /* ------------------------------------------------------------------------ */
 #define CHECKERROR(var,val,msg)  if (var ==val) {perror (msg);}
@@ -63,8 +79,10 @@ typedef void * (* pf_t)(void *) ;
 
 void lect_req_g2r(char* message_recu, G2RMessage_reception* g2r_message, int sock_fd);
 int convert_id_to_dico(int id, int type);
+int vitesse_to_service(int id_service);
 int mot_ecriture(unsigned char id_train);
 void creation_message_vers_g2r(int message_type, int id_train, float pos, float speed,int id_serv_1, int id_serv_2, int id_serv_3,int sock_fd, int id_ressource);
+bool contains(int arr[], int n, int x);
 int connect_to_server(char *remoteip, int remoteport);
 void init_timer() ;
 void send_position(int signum);

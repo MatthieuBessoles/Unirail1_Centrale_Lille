@@ -213,8 +213,9 @@ void creation_message_vers_train(int message_type, int id_train, float dist, flo
     	memcpy(frame + sizeof(int) * 3, &(g2r_message_envoi.speed), sizeof(float));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float), &(g2r_message_envoi.dist), sizeof(float));
     	memcpy(frame + sizeof(int) * 3 + sizeof(float)*2, &(g2r_message_envoi.id_ressource), sizeof(int));
-    	
-    	memcpy(frame + sizeof(int) * 4 + sizeof(float)*2, &(g2r_message_envoi.services_ok), num_services_ok*sizeof(int));
+    	for (int i = 0; i < num_services_ok; i++) {
+    		memcpy(frame + sizeof(int) * (4+i) + sizeof(float)*2, &(g2r_message_envoi.services_ok[i]), sizeof(int));
+    		printf("[creation_message_vers_train] service_ok %d = %d\n",i,g2r_message_envoi.services_ok[i]);}
 	write(sock_fd, frame, frame_length);
 	free(frame);
     	
@@ -269,19 +270,7 @@ void check_position(int message_type, int train_id, float pos, float speed, int 
 	creation_message_vers_train(12, train_id, pos, vitesse_autor,2.0, services,0, 3,sockfd,0);
 	}
 	
-float vitesse_to_service(int id_service){
-	printf("on associe une vitesse au service %d\n",id_service);
-	float vitesse;
-	if (id_service== 1 || id_service == 2 || id_service ==6 || id_service == 8 || id_service == 10 || id_service ==18 || id_service == 14 || id_service == 17){
-		vitesse = VITESSE_MAX;
-		}
-	else if (id_service <= 30){vitesse = VITESSE_VIRAGE;}
-	else {
-		vitesse = VITESSE_AIGUILLAGE;
-		}
-	printf("La vitesse %f a été associée au service %d\n",vitesse,id_service);
-	return vitesse;
-	}
+
 	
 
 void autorisation(int message_type, int train_id, float pos, float speed, int id_service_1, int id_service_2, int id_service_3, int sockfd, int id_ressource){

@@ -62,11 +62,7 @@ typedef void * (* pf_t)(void *) ;
 /*			C O N S T A N T E S     S Y M B O L I Q U E S				*/
 /* ------------------------------------------------------------------------ */
 //pour l'utilisation de CHECK_IF
-#define VITESSE_URGENCE 0
-#define VITESSE_APPROCHE 10
-#define VITESSE_AIGUILLAGE 20
-#define VITESSE_VIRAGE 30
-#define VITESSE_MAX 45
+
 #define NUM_RESSOURCES 9
 
 
@@ -75,7 +71,7 @@ typedef void * (* pf_t)(void *) ;
 /* ------------------------------------------------------------------------ */
 void lect_req_train(char* message_recu, TrainMessage_reception* train_message, int sock_fd);
 int service_to_ressource(int id_service);
-float vitesse_to_service(int id_service);
+
 void autorisation(int message_type, int train_id, float pos, float speed, int id_service_1, int id_service_2, int id_service_3, int sockfd,int id_ressource);
 int * ressource_2_list_services(int id_ressource);
 void creation_message_vers_train(int message_type, int id_train, float dist, float speed,int num_services_ok, int* services,int id_zone_suivi, int id_serv_ok,int sock_fd,int id_ressource);
